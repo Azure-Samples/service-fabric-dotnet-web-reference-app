@@ -303,11 +303,11 @@ namespace Inventory.Service
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        protected override async Task RunAsync(CancellationToken cancellationToken)
+        protected override Task RunAsync(CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.Message("InventoryService ReliableDictionary successfully created");
 
-            await Task.WhenAll(this.PeriodicInventoryCheck(cancellationToken), this.PeriodicOldMessageTrimming(cancellationToken));
+            return Task.WhenAll(this.PeriodicInventoryCheck(cancellationToken), this.PeriodicOldMessageTrimming(cancellationToken));
         }
 
         private static void PrintInventoryItems(IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems)
@@ -332,27 +332,25 @@ namespace Inventory.Service
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                IEnumerator<KeyValuePair<CustomerOrderActorMessageId, DateTime>> requests = recentRequests.GetEnumerator();
-
                 using (ITransaction tx = this.stateManager.CreateTransaction())
                 {
-                    while (requests.MoveNext())
+                    foreach (var request in recentRequests)
                     {
                         //if we have a record of a message that is older than 2 hours from current time, then remove that record
                         //from both of the stale message tracking dictionaries.
-                        if (requests.Current.Value < (DateTime.UtcNow.AddHours(-2)))
+                        if (request.Value < (DateTime.UtcNow.AddHours(-2)))
                         {
-                            await recentRequests.TryRemoveAsync(tx, requests.Current.Key);
-                            await requestHistory.TryRemoveAsync(tx, requests.Current.Key);
+                            await recentRequests.TryRemoveAsync(tx, request.Key);
+                            await requestHistory.TryRemoveAsync(tx, request.Key);
                         }
                     }
-
+                
                     await tx.CommitAsync();
                 }
-            }
 
-            //sleep for 5 minutes then scan again
-            await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken);
+                //sleep for 5 minutes then scan again
+                await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken);
+            }
         }
 
         private async Task PeriodicInventoryCheck(CancellationToken cancellationToken)
