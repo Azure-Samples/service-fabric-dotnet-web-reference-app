@@ -1,0 +1,125 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24627.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "WebReferenceApplication", "WebReferenceApplication\WebReferenceApplication.sfproj", "{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3} = {9EC0063F-489E-43FE-94B5-BF5F89977CD3}
+		{1E7E813F-43D3-4D0B-8546-5E1023873F28} = {1E7E813F-43D3-4D0B-8546-5E1023873F28}
+		{A44FC2C5-6781-447E-80F5-7265B960B36A} = {A44FC2C5-6781-447E-80F5-7265B960B36A}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.Service", "Web.Service\Web.Service.csproj", "{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.Actor", "CustomerOrder.Actor\CustomerOrder.Actor.csproj", "{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.Domain", "CustomerOrder.Domain\CustomerOrder.Domain.csproj", "{1E7E813F-43D3-4D0B-8546-5E1023873F28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequest.Actor", "RestockRequest.Actor\RestockRequest.Actor.csproj", "{4C5ACF3B-E6D1-4FBD-8B23-A9FA7BA6326E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3} = {9EC0063F-489E-43FE-94B5-BF5F89977CD3}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequest.Domain", "RestockRequest.Domain\RestockRequest.Domain.csproj", "{A44FC2C5-6781-447E-80F5-7265B960B36A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3} = {9EC0063F-489E-43FE-94B5-BF5F89977CD3}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.Service", "Inventory.Service\Inventory.Service.csproj", "{714B1C61-FFA8-4A5E-8DD2-D0A290677293}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequestManager.Service", "RestockRequestManager.Service\RestockRequestManager.Service.csproj", "{7C404BC4-7589-488C-AB09-876E5B33B641}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{9EC0063F-489E-43FE-94B5-BF5F89977CD3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequest.Tests", "RestockRequest.Tests\RestockRequest.Tests.csproj", "{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.Tests", "CustomerOrder.Tests\CustomerOrder.Tests.csproj", "{A598E305-52E9-4E60-B7B1-98C1BFAA7165}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequestManager.Domain", "RestockRequestManager.Domain\RestockRequestManager.Domain.csproj", "{4162F266-D657-4143-AA62-626C10D23561}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.Domain", "Inventory.Domain\Inventory.Domain.csproj", "{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.UnitTests", "CustomerOrder.UnitTests\CustomerOrder.UnitTests.csproj", "{226B8D34-99CF-4172-87DC-E20B39030CC0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mocks", "Mocks\Mocks.csproj", "{00E00484-BD00-40CD-B2CC-1CFA8E893972}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.UnitTests", "Inventory.UnitTests\Inventory.UnitTests.csproj", "{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Debug|x64.ActiveCfg = Debug|x64
+		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Debug|x64.Build.0 = Debug|x64
+		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Debug|x64.Deploy.0 = Debug|x64
+		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Release|x64.ActiveCfg = Release|x64
+		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Release|x64.Build.0 = Release|x64
+		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Release|x64.Deploy.0 = Release|x64
+		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Debug|x64.ActiveCfg = Debug|x64
+		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Debug|x64.Build.0 = Debug|x64
+		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Release|x64.ActiveCfg = Release|x64
+		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Release|x64.Build.0 = Release|x64
+		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Debug|x64.ActiveCfg = Debug|x64
+		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Debug|x64.Build.0 = Debug|x64
+		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Release|x64.ActiveCfg = Release|x64
+		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Release|x64.Build.0 = Release|x64
+		{1E7E813F-43D3-4D0B-8546-5E1023873F28}.Debug|x64.ActiveCfg = Debug|x64
+		{1E7E813F-43D3-4D0B-8546-5E1023873F28}.Debug|x64.Build.0 = Debug|x64
+		{1E7E813F-43D3-4D0B-8546-5E1023873F28}.Release|x64.ActiveCfg = Release|x64
+		{1E7E813F-43D3-4D0B-8546-5E1023873F28}.Release|x64.Build.0 = Release|x64
+		{4C5ACF3B-E6D1-4FBD-8B23-A9FA7BA6326E}.Debug|x64.ActiveCfg = Debug|x64
+		{4C5ACF3B-E6D1-4FBD-8B23-A9FA7BA6326E}.Debug|x64.Build.0 = Debug|x64
+		{4C5ACF3B-E6D1-4FBD-8B23-A9FA7BA6326E}.Release|x64.ActiveCfg = Release|x64
+		{4C5ACF3B-E6D1-4FBD-8B23-A9FA7BA6326E}.Release|x64.Build.0 = Release|x64
+		{A44FC2C5-6781-447E-80F5-7265B960B36A}.Debug|x64.ActiveCfg = Debug|x64
+		{A44FC2C5-6781-447E-80F5-7265B960B36A}.Debug|x64.Build.0 = Debug|x64
+		{A44FC2C5-6781-447E-80F5-7265B960B36A}.Release|x64.ActiveCfg = Release|x64
+		{A44FC2C5-6781-447E-80F5-7265B960B36A}.Release|x64.Build.0 = Release|x64
+		{714B1C61-FFA8-4A5E-8DD2-D0A290677293}.Debug|x64.ActiveCfg = Debug|x64
+		{714B1C61-FFA8-4A5E-8DD2-D0A290677293}.Debug|x64.Build.0 = Debug|x64
+		{714B1C61-FFA8-4A5E-8DD2-D0A290677293}.Release|x64.ActiveCfg = Release|x64
+		{714B1C61-FFA8-4A5E-8DD2-D0A290677293}.Release|x64.Build.0 = Release|x64
+		{7C404BC4-7589-488C-AB09-876E5B33B641}.Debug|x64.ActiveCfg = Debug|x64
+		{7C404BC4-7589-488C-AB09-876E5B33B641}.Debug|x64.Build.0 = Debug|x64
+		{7C404BC4-7589-488C-AB09-876E5B33B641}.Release|x64.ActiveCfg = Release|x64
+		{7C404BC4-7589-488C-AB09-876E5B33B641}.Release|x64.Build.0 = Release|x64
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Debug|x64.ActiveCfg = Debug|x64
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Debug|x64.Build.0 = Debug|x64
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Release|x64.ActiveCfg = Release|x64
+		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Release|x64.Build.0 = Release|x64
+		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Debug|x64.ActiveCfg = Debug|x64
+		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Debug|x64.Build.0 = Debug|x64
+		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Release|x64.ActiveCfg = Release|x64
+		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Release|x64.Build.0 = Release|x64
+		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Debug|x64.ActiveCfg = Debug|x64
+		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Debug|x64.Build.0 = Debug|x64
+		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Release|x64.ActiveCfg = Release|x64
+		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Release|x64.Build.0 = Release|x64
+		{4162F266-D657-4143-AA62-626C10D23561}.Debug|x64.ActiveCfg = Debug|x64
+		{4162F266-D657-4143-AA62-626C10D23561}.Debug|x64.Build.0 = Debug|x64
+		{4162F266-D657-4143-AA62-626C10D23561}.Release|x64.ActiveCfg = Release|x64
+		{4162F266-D657-4143-AA62-626C10D23561}.Release|x64.Build.0 = Release|x64
+		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Debug|x64.ActiveCfg = Debug|x64
+		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Debug|x64.Build.0 = Debug|x64
+		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Release|x64.ActiveCfg = Release|x64
+		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Release|x64.Build.0 = Release|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Debug|x64.ActiveCfg = Debug|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Debug|x64.Build.0 = Debug|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Release|x64.ActiveCfg = Release|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Release|x64.Build.0 = Release|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Debug|x64.ActiveCfg = Debug|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Debug|x64.Build.0 = Debug|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Release|x64.ActiveCfg = Release|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Release|x64.Build.0 = Release|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Debug|x64.ActiveCfg = Debug|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Debug|x64.Build.0 = Debug|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Release|x64.ActiveCfg = Release|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

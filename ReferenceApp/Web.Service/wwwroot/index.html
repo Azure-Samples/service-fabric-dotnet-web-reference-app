@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="en" ng-app="fabrikam">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+    <meta http-equiv="content-type" content="application/force-download" >
+    <meta name=" viewport" content="width=device-width, initial-scale=1">
+    <title>Fabrikam Fashion</title>
+
+    <script type="text/javascript" src="Scripts/angular.js"></script>
+    <script type="text/javascript" src="Scripts/angular-cookies.js"></script>
+    <script type="text/javascript" src="Scripts/angular-index.js"></script>
+
+    <!-- Bootstrap -->
+    <link href="Content/bootstrap.css" rel="stylesheet">
+</head>
+<body ng-controller="testController" data-ng-init="initIndex()">
+
+    <div class="masthead">
+        <div class="container">
+            <p style="text-align:right;"><h7><b>Fabrikam Fashion</b></h7></p><br />
+        </div>
+    </div>
+    <div class="container below" ng-init="showCart=true">
+        <!--<p style="text-align:center; font-size:18px"><b>Clothing</b></p>-->
+        <table class="table table-striped" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Available</th>
+                    <th>Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="row in inventory">
+                    <td>{{row.Description}}</td>
+                    <td>${{row.Price}}</td>
+                    <td>{{row.CustomerAvailableStock}}</td>
+                    <td>
+                        <input type="number" class="textbox" ng-model="row.Quantity" />
+                        <input type="submit" value="Add" ng-click="submit(row)">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <br /> <br />
+
+        <p style="text-align:center; font-size:16px"><b>Shopping Cart</b></p>
+        <table ng-show="showCart" class="table table-striped" style="width:60%">
+            <thead>
+                <tr>
+                    <th colspan="2">Item</th>
+                    <th colspan="2">Price</th>
+                    <th colspan="2">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in cart">
+                    <td colspan="2"> {{item.Description}}</td>
+                    <td colspan="2"> ${{item.Price}}</td>
+                    <td colspan="2"> {{item.Quantity}}</td>
+                </tr>
+                <tr class="success">
+                    <td colspan="3"><b>Total</b></td>
+                    <td colspan="3">${{cart_total}}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="text-align: center">
+            <button ng-click="showCart=false">Hide Cart</button>
+            <button ng-click="showCart=true">Display Cart</button>
+        </p>
+        <br />
+        <form name="OrderForm" novalidate>
+            <p style="text-align: center; align-content:center">
+                <input type="submit" value="Place Order"
+                       ng-click="placeOrder(null)" />
+            </p>
+        </form>
+    </div>
+</body>
+</html>

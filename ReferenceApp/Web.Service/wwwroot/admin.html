@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="en" ng-app="fabrikam">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+    <meta http-equiv="content-type" content="application/force-download">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fabrikam Fashion</title>
+
+    <script type="text/javascript" src="Scripts/angular.js"></script>
+    <script type="text/javascript" src="Scripts/angular-cookies.js"></script>
+    <script type="text/javascript" src="Scripts/angular-index.js"></script>
+
+    <!-- Bootstrap -->
+    <link href="Content/bootstrap.css" rel="stylesheet">
+</head>
+<body ng-controller="testController">
+    <div class="masthead">
+        <div class="container">
+            <p style="text-align:right;"><h7><b>Fabrikam Fashion</b></h7></p><br />
+        </div>
+    </div>
+    <div class="container below" ng-init="showStatus=false">
+        <p style="text-align:center; font-size:34px"><b>Admin Portal!</b></p>
+        <br />
+        Description, Price, Number, Reorder Threshold, Max <br/>
+        Bioluminescent Dress, 14.99, 2000, 200, 2000 <br />
+        Electrifying Lightning Skirt, 29.99, 1500, 150, 1500 <br />
+        Blacklight Striped Trousers, 34.99, 3000, 300, 3000 <br />
+        <textarea cols="50" ng-model="itemsToCreate">
+        </textarea>
+
+        <p style="text-align: center">
+            <button ng-click="createInventory()">Create Inventory</button>
+            <div><b>Submission Result = {{createResult}}</b></div>
+        </p>
+
+        <br />
+
+    </div>
+</body>
+</html>

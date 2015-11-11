@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en" ng-app="fabrikam">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fabrikam Fashion</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.3/angular.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-cookies.js"></script>
+    <script type="text/javascript" src="../Content/ang-test.js"></script>
+    <!-- Bootstrap -->
+    <link href="../Content/bootstrap.css" rel="stylesheet">
+</head>
+<body ng-controller="testController">
+    <div class="masthead">
+        <div class="container">
+            <p style="height:350px"></p>
+            <p style="text-align:right;"><h7><b>fabrikam fashion</b></h7></p><br />
+        </div>
+    </div>
+
+    <p style="height:330px"></p>
+
+    <div class="container below" ng-init="showStatus=false">
+        <p style="text-align:center; font-size:34px"><b>View Order</b></p>
+        <br />
+        <table class="table table-striped" ng-show="showStatus" style="width:20%">
+            <tbody>
+                <tr>
+
+                    <td colspan="2" style="font-size:16px"><b>{{orderStatus}}</b></td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="text-align: center">
+            <button ng-click="showStatus=true">Display Order Status</button>
+            <button ng-click="showStatus=false">Hide Order Status</button>
+        </p>
+        <br />
+        <br />
+
+        <p style="text-align:center; font-size:16px"><b>Shopping Cart</b></p>
+        <table class="table table-striped" style="width:70%">
+            <thead>
+                <tr>
+                    <th colspan="2">Item</th>
+                    <th colspan="2">Price</th>
+                    <th colspan="2">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="order in cart">
+                    <td colspan="2"> {{order.Description}}</td>
+                    <td colspan="2"> ${{order.Price}}</td>
+                    <td colspan="2"> {{order.Quantity}}</td>
+                </tr>
+                <tr class="success">
+                    <td colspan="3"><b>Total</b></td>
+                    <td colspan="3">${{cart_total}}</td>
+                </tr>
+            </tbody>
+        </table>
+        <br />
+
+    </div>
+</body>
+</html>
