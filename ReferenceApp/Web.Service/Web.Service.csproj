@@ -151,6 +151,18 @@
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\packages\angularjs.1.4.6\content\Scripts\angular.js">
+      <Link>wwwroot\Scripts\angular.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\packages\bootstrap.3.3.5\content\Content\bootstrap.css">
+      <Link>wwwroot\Content\bootstrap.css</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\packages\jQuery.1.9.1\Content\Scripts\jquery-1.9.1.js">
+      <Link>wwwroot\Scripts\jquery-1.9.1.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="wwwroot\admin.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -170,10 +182,6 @@
   <Target Name="BeforeBuild">
   </Target>-->
   <Target Name="AfterBuild">
-    <Exec Command="xcopy ..\packages\angularjs.1.4.6\content\Scripts\* $(OutputPath)wwwroot\Scripts /s /i /Y" ContinueOnError="false" IgnoreExitCode="false" />
-    <Exec Command="xcopy ..\packages\jQuery.1.9.1\Content\Scripts\* $(OutputPath)wwwroot\Scripts /s /i /Y" ContinueOnError="false" IgnoreExitCode="false" />
-    <Exec Command="xcopy ..\packages\bootstrap.3.3.5\content\Scripts\* $(OutputPath)wwwroot\Scripts /s /i /Y" ContinueOnError="false" IgnoreExitCode="false" />
-    <Exec Command="xcopy ..\packages\bootstrap.3.3.5\content\Content\* $(OutputPath)wwwroot\Content /s /i /Y" ContinueOnError="false" IgnoreExitCode="false" />
   </Target>
   <Import Project="..\packages\Microsoft.ServiceFabric.Actors.1.4.78-preview\build\Microsoft.ServiceFabric.Actors.targets" Condition="Exists('..\packages\Microsoft.ServiceFabric.Actors.1.4.78-preview\build\Microsoft.ServiceFabric.Actors.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
