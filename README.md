@@ -57,4 +57,4 @@ In the publish dialog box, select the Cloud profile and a connection endpoint. S
 ```
 ## Next steps
 
-- [Learn about the application architecture and data flow.](./Docs/architecture.md "Learn about the application architecture and data flow.")
+- [Learn about the application architecture and data flow.](https://github.com/Azure-Samples/service-fabric-dotnet-web-reference-app/blob/master/Docs/architecture.md "Learn about the application architecture and data flow.")
