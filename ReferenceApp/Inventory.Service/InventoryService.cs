@@ -7,6 +7,10 @@ namespace Inventory.Service
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
+    using System.Fabric;
+    using System.Fabric.Testability;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -18,6 +22,7 @@ namespace Inventory.Service
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
+    using Microsoft.WindowsAzure.Storage.Auth;
     using RestockRequest.Domain;
     using RestockRequestManager.Domain;
 
@@ -27,7 +32,24 @@ namespace Inventory.Service
         private const string ActorMessageDictionaryName = "incomingMessages";
         private const string RestockRequestManagerServiceName = "RestockRequestManager";
         private const string RequestHistoryDictionaryName = "RequestHistory";
+
+        private static string BackupTestAccountName = ConfigurationManager.AppSettings["BackupTestAccountName"];
+        private static string PrimaryKeyForBackupTestAccount = ConfigurationManager.AppSettings["PrimaryKeyForBackupTestAccount"];
+        private static string BlobServiceEndpointAddress = ConfigurationManager.AppSettings["BlobServiceEndPointAddress"];
+
+        private readonly Uri blobContainerEndpoint = new Uri(BlobServiceEndpointAddress);
+        private readonly Uri countDictionaryName = new Uri("fabric:/countDictionary");
+        private readonly StorageCredentials storageCredentials = new StorageCredentials(BackupTestAccountName, PrimaryKeyForBackupTestAccount);
         private IReliableStateManager stateManager;
+
+        private IBackupStore backupStore;
+        private Guid testId;
+        //Set local backup folder
+        private string localBackupStore = @"E:\Temp2\";
+
+
+        //Set local or cloud backup
+        private StorageTypes storageType = StorageTypes.Azure;
 
         public InventoryService()
         {
@@ -275,11 +297,27 @@ namespace Inventory.Service
             }
         }
 
+        public async Task CopyBackupFolderAsync(string backupFolder, string partitionId, string backupId, CancellationToken cancellationToken)
+        {
+            //Storing local backups; set to E:\Temp2 by default.
+            string pathToFolder = Path.Combine(this.localBackupStore, partitionId, backupId);
+            ServiceEventSource.Current.ServiceMessage(this, "Backup Folder Path " + pathToFolder);
+
+            await this.CopyDirectory(backupFolder, pathToFolder);
+
+            //var blob = this.backupBlobContainer.GetBlockBlobReference(backupId);
+            //await blob.UploadFromFileAsync(pathToZippedFolder, FileMode.Open, CancellationToken.None);
+            //Service.WriteTrace("BackupStore: UploadBackupFolderAsync: success.");
+        }
+
         protected override IReliableStateManager CreateReliableStateManager()
         {
             if (this.stateManager == null)
             {
-                this.stateManager = base.CreateReliableStateManager();
+                //this.stateManager = base.CreateReliableStateManager();
+                this.stateManager = new ReliableStateManager(
+                    new ReliableStateManagerConfiguration(
+                        onDataLossEvent: this.OnDataLossAsync));
             }
             return this.stateManager;
         }
@@ -298,6 +336,48 @@ namespace Inventory.Service
             };
         }
 
+
+        protected async Task<bool> OnDataLossAsync(CancellationToken cancellationToken)
+        {
+            //If restoring from Azure BlobStore
+            if (this.storageType == StorageTypes.Azure)
+            {
+                await this.InitializeAsync(cancellationToken);
+            }
+
+
+            try
+            {
+                string backupFolder;
+
+                //If restoring from local directory
+                if (this.storageType == StorageTypes.Local)
+                {
+                    backupFolder = this.GetLastBackupFolder();
+                }
+                //If restoring from Azure BlobStore
+                else
+                {
+                    backupFolder = await this.backupStore.DownloadAnyBackupAsync(cancellationToken);
+                }
+
+
+                ServiceEventSource.Current.ServiceMessage(this, "Restoration Folder Path " + backupFolder);
+                await this.StateManager.RestoreAsync(backupFolder, RestorePolicy.Force, cancellationToken);
+
+                ServiceEventSource.Current.ServiceMessage(this, "Restore completed");
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "Restoration failed: " + "{0} {1}" + e.GetType() + e.Message);
+
+                throw;
+            }
+        }
+
+
         /// <summary>
         /// Populates the inventory with some dummy items.
         /// </summary>
@@ -306,8 +386,198 @@ namespace Inventory.Service
         protected override Task RunAsync(CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.Message("InventoryService ReliableDictionary successfully created");
+            //If restoring from Azure BlobStore
 
             return Task.WhenAll(this.PeriodicInventoryCheck(cancellationToken), this.PeriodicOldMessageTrimming(cancellationToken));
+        }
+
+
+        private async Task<bool> BackupCallbackAzureAsync(BackupInfo backupInfo)
+        {
+            string backupId = Guid.NewGuid().ToString();
+            CancellationToken cancellationToken = default(CancellationToken);
+
+            long totalBackupCount;
+
+
+            IReliableDictionary<int, long> countDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<int, long>>(this.countDictionaryName);
+            using (ITransaction txn = this.StateManager.CreateTransaction())
+            {
+                long count = await countDictionary.AddOrUpdateAsync(txn, 0, 0, (key, oldValue) => { return oldValue + 1; });
+
+                totalBackupCount = count;
+                await txn.CommitAsync();
+            }
+
+
+            ServiceEventSource.Current.Message("Backup count dictionary updated: " + totalBackupCount);
+
+
+            if ((totalBackupCount%10) == 0)
+            {
+                //Store no more than 10 backups at a time - the actual max might be a bit more than 10 since more backups could have been created when deletion was taking place. Keeps behind 5 backups.
+                await this.backupStore.DeleteBackupsAzureAsync(cancellationToken);
+            }
+
+            if ((totalBackupCount > 10) && (DateTime.Now.Second%20) == 0)
+            {
+                //Let's simulate a data loss every time the time is a multiple of 20 seconds, and a backup just completed.
+                ServiceEventSource.Current.ServiceMessage(this, "Restore Started");
+
+                using (FabricClient fabricClient = new FabricClient())
+                {
+                    PartitionSelector partitionSelector = PartitionSelector.PartitionIdOf(
+                        this.ServiceInitializationParameters.ServiceName,
+                        this.ServiceInitializationParameters.PartitionId);
+
+                    await fabricClient.ServiceManager.InvokeDataLossAsync(partitionSelector, DataLossMode.PartialDataLoss, cancellationToken);
+                }
+            }
+
+            ServiceEventSource.Current.Message("Backing up from directory, ID  : " + backupInfo.Directory + " *** " + backupId);
+            try
+            {
+                await this.backupStore.UploadBackupFolderAsync(backupInfo.Directory, backupId, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "Uploading to backup folder failed: " + "{0} {1}" + e.GetType() + e.Message);
+            }
+
+            return true;
+        }
+
+
+        private async Task CopyDirectory(string strSource, string strDestination)
+        {
+            if (!System.IO.Directory.Exists(strDestination))
+            {
+                Directory.CreateDirectory(strDestination);
+            }
+
+            DirectoryInfo dirInfo = new DirectoryInfo(strSource);
+            FileInfo[] files = dirInfo.GetFiles();
+            foreach (FileInfo tempfile in files)
+            {
+                tempfile.CopyTo(Path.Combine(strDestination, tempfile.Name));
+            }
+
+            DirectoryInfo[] directories = dirInfo.GetDirectories();
+            foreach (DirectoryInfo tempdir in directories)
+            {
+                await this.CopyDirectory(Path.Combine(strSource, tempdir.Name), Path.Combine(strDestination, tempdir.Name));
+            }
+        }
+
+        private string GetLastBackupFolder()
+        {
+            string strSource = Path.Combine(this.localBackupStore, this.ServicePartition.PartitionInfo.Id.ToString());
+
+
+            DirectoryInfo dirInfo = new DirectoryInfo(strSource);
+            {
+                foreach (DirectoryInfo tempDir in dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime))
+                {
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "tempDir is " + this.localBackupStore + this.ServicePartition.PartitionInfo.Id + @"\" + tempDir);
+                    return (this.localBackupStore + this.ServicePartition.PartitionInfo.Id + @"\" + tempDir);
+                }
+            }
+
+            return null;
+        }
+
+        private void DeleteBackups(string strSource, int keepBehind)
+        {
+            if (!Directory.Exists(strSource))
+            {
+                //Nothing to delete; Backups may not even have been created for the partition
+                return;
+            }
+
+            System.IO.DirectoryInfo dirInfo = new DirectoryInfo(strSource);
+
+            using (ITransaction txn = this.StateManager.CreateTransaction())
+            {
+                foreach (DirectoryInfo tempDir in dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime).Skip(keepBehind))
+                {
+                    tempDir.Delete(true);
+                }
+            }
+
+            return;
+        }
+
+        private async Task<bool> BackupCallbackAsync(BackupInfo backupInfo)
+        {
+            string backupId = Guid.NewGuid().ToString();
+
+
+            long totalBackupCount;
+
+
+            IReliableDictionary<int, long> countDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<int, long>>(this.countDictionaryName);
+            using (ITransaction txn = this.StateManager.CreateTransaction())
+            {
+                long count = await countDictionary.AddOrUpdateAsync(txn, 0, 0, (key, oldValue) => { return oldValue + 1; });
+
+                totalBackupCount = count;
+                await txn.CommitAsync();
+            }
+
+            ServiceEventSource.Current.ServiceMessage(this, "Backup count dictionary updated: " + totalBackupCount);
+            ServiceEventSource.Current.Message("Backup count dictionary updated: " + totalBackupCount);
+
+            if ((totalBackupCount%20) == 0)
+            {
+                //The following limits the number of backups stored to 20 per partition. The actual max might be more than 20 per partition since more backups 
+                //could have been created when deletion was taking place. 
+                //Also depending on the backup that was restored, the count of backups could be a lot larger.
+                this.DeleteBackups(Path.Combine(this.localBackupStore, this.ServicePartition.PartitionInfo.Id.ToString()), 5);
+            }
+
+            //Simulate a restore/data loss event randomly. This assumes that all partitions have some state at this point. 
+            //Five inventory items must be added for all five partitions to have state.
+            if ((totalBackupCount > 19) && (DateTime.Now.Second%20) == 0)
+            {
+                CancellationToken cancellationToken = default(CancellationToken);
+
+                ServiceEventSource.Current.ServiceMessage(this, "Restore Started");
+
+                using (FabricClient fabricClient = new FabricClient())
+                {
+                    PartitionSelector partitionSelector = PartitionSelector.PartitionIdOf(
+                        this.ServiceInitializationParameters.ServiceName,
+                        this.ServiceInitializationParameters.PartitionId);
+
+                    await fabricClient.ServiceManager.InvokeDataLossAsync(partitionSelector, DataLossMode.PartialDataLoss, cancellationToken);
+                }
+            }
+
+            await
+                this.CopyBackupFolderAsync(backupInfo.Directory, this.ServicePartition.PartitionInfo.Id.ToString(), backupId, CancellationToken.None);
+
+            return true;
+        }
+
+
+        private async Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            this.backupStore = new BackupStore(
+                this.blobContainerEndpoint,
+                this.storageCredentials,
+                this.ServicePartition,
+                this.testId,
+                this.ServiceInitializationParameters);
+            try
+            {
+                await this.backupStore.InitializeAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "{0} {1}" + e.GetType() + e.Message);
+            }
         }
 
         private static void PrintInventoryItems(IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems)
@@ -334,7 +604,7 @@ namespace Inventory.Service
             {
                 using (ITransaction tx = this.stateManager.CreateTransaction())
                 {
-                    foreach (var request in recentRequests)
+                    foreach (KeyValuePair<CustomerOrderActorMessageId, DateTime> request in recentRequests)
                     {
                         //if we have a record of a message that is older than 2 hours from current time, then remove that record
                         //from both of the stale message tracking dictionaries.
@@ -344,7 +614,7 @@ namespace Inventory.Service
                             await requestHistory.TryRemoveAsync(tx, request.Key);
                         }
                     }
-                
+
                     await tx.CommitAsync();
                 }
 
@@ -357,6 +627,10 @@ namespace Inventory.Service
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+            if (this.storageType == StorageTypes.Azure)
+            {
+                await this.InitializeAsync(cancellationToken);
+            }
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -413,10 +687,25 @@ namespace Inventory.Service
                     {
                         ServiceEventSource.Current.ServiceMessage(this, "Failed to place restock order for item {0}. {1}", item.Id, e.ToString());
                     }
+
+                    if (this.storageType == StorageTypes.Local)
+                    {
+                        await this.StateManager.BackupAsync(this.BackupCallbackAsync);
+                    }
+                    else
+                    {
+                        await this.StateManager.BackupAsync(this.BackupCallbackAzureAsync);
+                    }
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
             }
         }
+
+        private enum StorageTypes
+        {
+            Azure,
+            Local
+        };
     }
 }
