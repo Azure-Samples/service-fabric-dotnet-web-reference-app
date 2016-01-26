@@ -21,9 +21,10 @@ The customer order and inventory management system tracks user orders, removes i
 Using Service Fabric's stateful services, each of these services can maintain its own data, rather than relying a shared monolithic data base. This allows each service to scale independently using Service Fabric's stateful partitioning to meet its unique requirements for data capacity and throughput. 
 
 ## Running this sample
-The application is entirely self-contained; there are no dependencies on external services or databases to manage request processing or data persistence. This makes running the complete application pretty easy:
+The majority of this application is self-contained. The only external dependency is to Azure storage for [backup & restore](https://azure.microsoft.com/en-us/documentation/articles/service-fabric-reliable-services-backup-restore/) purposes. There are no other dependencies on external services or databases to manage related to request processing or data persistence. This makes running the complete application pretty easy:
 
 1. Open the .sln solution file in Visual Studio 2015.
+2. Edit the Inventory.Service\App.config file to contain the connection details for your Azure storage account.
 2. Press F5 to run.
 
 This deploys the entire web store application on your local machine.
