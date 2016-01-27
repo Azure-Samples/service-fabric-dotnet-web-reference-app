@@ -33,10 +33,12 @@ namespace Web.Service
         {
             EndpointResourceDescription serviceEndpoint = serviceInitializationParameters.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
             int port = serviceEndpoint.Port;
+            EndpointProtocol protocol = serviceEndpoint.Protocol;
 
             this.listeningAddress = String.Format(
             CultureInfo.InvariantCulture,
-            "http://+:{0}/{1}",
+            "{0}://+:{1}/{2}",
+            protocol,
             port,
             String.IsNullOrWhiteSpace(this.appRoot)
                 ? String.Empty
