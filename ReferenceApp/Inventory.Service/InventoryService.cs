@@ -43,7 +43,6 @@ namespace Inventory.Service
         private IReliableStateManager stateManager;
 
         private IBackupStore backupStore;
-        private Guid testId;
         //Set local backup folder
         private string localBackupStore = @"E:\Temp2\";
 
@@ -568,7 +567,6 @@ namespace Inventory.Service
                 this.blobContainerEndpoint,
                 this.storageCredentials,
                 this.ServicePartition,
-                this.testId,
                 this.ServiceInitializationParameters);
             try
             {

@@ -21,7 +21,6 @@ namespace Inventory.Service
     {
         private readonly CloudBlobClient cloudBlobClient;
         private readonly IStatefulServicePartition servicePartition;
-        private readonly Guid testId;
         private readonly StatefulServiceInitializationParameters statefulServiceInitializationParameters;
         private CloudBlobContainer backupBlobContainer;
         private CloudBlockBlob lastBackupBlob;
@@ -35,12 +34,10 @@ namespace Inventory.Service
             Uri endpoint,
             StorageCredentials credentials,
             IStatefulServicePartition servicePartition,
-            Guid testId,
             StatefulServiceInitializationParameters statefulServiceInitializationParameters)
         {
             this.cloudBlobClient = new CloudBlobClient(endpoint, credentials);
             this.servicePartition = servicePartition;
-            this.testId = testId;
             this.statefulServiceInitializationParameters = statefulServiceInitializationParameters;
 
             this.backupBlobContainer = this.GetBackupBlobContainer();
@@ -56,7 +53,7 @@ namespace Inventory.Service
                     CloudBlockBlob theblob = (CloudBlockBlob) item;
                     if (theblob.Properties.LastModified >= DateTime.UtcNow.AddMinutes(-1*3))
                     {
-                        theblob.Delete();
+                        await theblob.DeleteAsync();
                     }
                 }
             }
@@ -74,20 +71,21 @@ namespace Inventory.Service
 
         public async Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken)
         {
-            IEnumerable<IListBlobItem> blobs = this.backupBlobContainer.ListBlobs();
-
-            foreach (IListBlobItem blobList in blobs)
+            bool exists = false;
+            BlobResultSegment resultSegment = await this.backupBlobContainer.ListBlobsSegmentedAsync(new BlobContinuationToken());
+            while(resultSegment.ContinuationToken != null)
             {
-                CloudBlockBlob blob = blobList as CloudBlockBlob;
+                if (resultSegment.Results.Count() > 0)
+                {
+                    exists = true;
+                    break;
+                }
 
-                ServiceEventSource.Current.Message("BackupStore: CheckIfBackupExistsInShareAsync returned true");
-
-                return true;
+                resultSegment = await this.backupBlobContainer.ListBlobsSegmentedAsync(resultSegment.ContinuationToken);
             }
 
-            ServiceEventSource.Current.Message("BackupStore: CheckIfBackupExistsInShareAsync returned false");
-
-            return false;
+            ServiceEventSource.Current.Message("BackupStore: CheckIfBackupExistsInShareAsync returned " + exists.ToString().ToLowerInvariant());
+            return exists;
         }
 
         public async Task UploadBackupFolderAsync(string backupFolder, string backupId, CancellationToken cancellationToken)
