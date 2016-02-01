@@ -33,9 +33,10 @@ namespace Inventory.Service
         private const string RestockRequestManagerServiceName = "RestockRequestManager";
         private const string RequestHistoryDictionaryName = "RequestHistory";
 
-        private static string BackupTestAccountName = ConfigurationManager.AppSettings["BackupTestAccountName"];
-        private static string PrimaryKeyForBackupTestAccount = ConfigurationManager.AppSettings["PrimaryKeyForBackupTestAccount"];
-        private static string BlobServiceEndpointAddress = ConfigurationManager.AppSettings["BlobServiceEndPointAddress"];
+        private static string CurSetting; // this helper string is used to assign fallback strings when running unit tests (ConfigurationManager does not assign right values during unit tests)
+        private static string BackupTestAccountName = ((CurSetting = ConfigurationManager.AppSettings["BackupTestAccountName"]) != null) ? CurSetting : "TBA=";  // this string needs to have length multiple of 4
+        private static string PrimaryKeyForBackupTestAccount = ((CurSetting = ConfigurationManager.AppSettings["PrimaryKeyForBackupTestAccount"]) != null) ? CurSetting : "TBA="; // this string needs to have length multiple of 4
+        private static string BlobServiceEndpointAddress = ((CurSetting = ConfigurationManager.AppSettings["BlobServiceEndPointAddress"]) != null) ? CurSetting : "https://TBA.net/"; // this string needs to have valid Uri syntax
 
         private readonly Uri blobContainerEndpoint = new Uri(BlobServiceEndpointAddress);
         private readonly Uri countDictionaryName = new Uri("fabric:/countDictionary");
