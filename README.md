@@ -56,6 +56,19 @@ In the publish dialog box, select the Cloud profile and a connection endpoint. S
 </PublishProfile>
 
 ```
+
+## Unit Tests
+This application contains also unit tests to show the recommended pattern  to create tests against a Service Fabric application. 
+  Below are the steps  to run or debug a test (using  Visual studio 2015 on a 64 bit windows):
+  - Open the WebReferenceApp solution  in Visual studio 2015
+  - Select menus "Test" / "Test Setting" / "Default processor architecture" -> x64
+  - Rebuild the solution
+  - Select menus "Test" / "Windows" / "Test Explorer" you should see now the text explorer window with the list of available tests
+  - Choose one or more tests (for example "TestAddStock" under InventoryServiceTests)
+  - Right click the test of your choice and select run the test, you will see after a while a green check mark of test passed
+  - You can try also to debug the test  to  understand better  its logic 
+
+
 ## Next steps
 
 - [Learn about the application architecture and data flow.](https://github.com/Azure-Samples/service-fabric-dotnet-web-reference-app/blob/master/Docs/architecture.md "Learn about the application architecture and data flow.")
