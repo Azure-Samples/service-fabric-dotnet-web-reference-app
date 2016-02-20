@@ -26,7 +26,7 @@
   <Resources>
     <Endpoints>
       <!-- This endpoint is used by the OWIN communication listener to obtain the port on which to listen. -->
-      <Endpoint Name="ServiceEndpoint" Type="Input" Protocol="http" Port="80" />
+      <Endpoint Name="ServiceEndpoint" Type="Input" Protocol="http" Port="8505" />
 
     </Endpoints>
   </Resources>

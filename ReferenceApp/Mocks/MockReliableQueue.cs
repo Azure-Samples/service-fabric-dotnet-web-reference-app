@@ -12,7 +12,7 @@ namespace Mocks
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
-
+    using System.Collections;
     public class MockReliableQueue<T> : IReliableQueue<T>
     {
         private ConcurrentQueue<T> queue = new ConcurrentQueue<T>();
@@ -36,9 +36,7 @@ namespace Mocks
             T item;
             bool result = this.queue.TryDequeue(out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, item));
-
-            //return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalResult<T>(result, item));
         }
 
         public Task<ConditionalResult<T>> TryDequeueAsync(ITransaction tx)
@@ -46,9 +44,7 @@ namespace Mocks
             T item;
             bool result = this.queue.TryDequeue(out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, item));
-
-            //return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalResult<T>(result, item));
         }
 
         public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, LockMode lockMode, TimeSpan timeout, CancellationToken cancellationToken)
@@ -56,9 +52,7 @@ namespace Mocks
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, item));
-
-            //return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalResult<T>(result, item));
         }
 
         public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, LockMode lockMode)
@@ -66,9 +60,7 @@ namespace Mocks
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, item));
-
-            //return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalResult<T>(result, item));
         }
 
         public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
@@ -76,9 +68,7 @@ namespace Mocks
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, item));
-
-            //return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalResult<T>(result, item));
         }
 
         public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx)
@@ -86,9 +76,7 @@ namespace Mocks
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, item));
-
-            //return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalResult<T>(result, item));
         }
 
         public Task ClearAsync()
@@ -104,7 +92,7 @@ namespace Mocks
 
         public Task<long> GetCountAsync()
         {
-            return Task.FromResult((long) this.queue.Count);
+            return Task.FromResult((long)this.queue.Count);
         }
 
         public Uri Name { get; set; }
@@ -114,9 +102,14 @@ namespace Mocks
             return this.queue.GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        public Task<IEnumerable<T>> CreateEnumerableAsync(ITransaction tx)
         {
-            return this.queue.GetEnumerator();
+            throw new NotImplementedException();
+        }
+
+        public Task<long> GetCountAsync(ITransaction tx)
+        {
+            throw new NotImplementedException();
         }
     }
 }

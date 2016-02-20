@@ -5,6 +5,7 @@
 
 namespace Mocks
 {
+    using System;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
 
@@ -22,6 +23,14 @@ namespace Mocks
         public long TransactionId
         {
             get { return 0L; }
+        }
+
+        public long CommitSequenceNumber
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public void Dispose()

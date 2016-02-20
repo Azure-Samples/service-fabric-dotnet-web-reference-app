@@ -243,7 +243,7 @@ namespace Inventory.Service
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
-            PrintInventoryItems(inventoryItems);
+            this.PrintInventoryItemsAsync(inventoryItems);
 
             using (ITransaction tx = this.stateManager.CreateTransaction())
             {
@@ -265,9 +265,14 @@ namespace Inventory.Service
 
             ServiceEventSource.Current.Message("Called GetCustomerInventory to return InventoryItemView");
 
-            PrintInventoryItems(inventoryItems);
+            this.PrintInventoryItemsAsync(inventoryItems);
 
-            IEnumerable<InventoryItemView> results = inventoryItems.Select(x => (InventoryItemView) x.Value).Where(x => x.CustomerAvailableStock > 0);
+            IEnumerable<InventoryItemView> results;
+
+            using (ITransaction tx = this.stateManager.CreateTransaction())
+            {
+                results = (await inventoryItems.CreateEnumerableAsync(tx)).Select(x => (InventoryItemView)x.Value).Where(x => x.CustomerAvailableStock > 0);
+            }
 
             List<InventoryItemView> resultList = results.ToList<InventoryItemView>();
 
@@ -413,13 +418,13 @@ namespace Inventory.Service
             ServiceEventSource.Current.Message("Backup count dictionary updated: " + totalBackupCount);
 
 
-            if ((totalBackupCount%10) == 0)
+            if ((totalBackupCount % 10) == 0)
             {
                 //Store no more than 10 backups at a time - the actual max might be a bit more than 10 since more backups could have been created when deletion was taking place. Keeps behind 5 backups.
                 await this.backupStore.DeleteBackupsAzureAsync(cancellationToken);
             }
 
-            if ((totalBackupCount > 10) && (DateTime.Now.Second%20) == 0)
+            if ((totalBackupCount > 10) && (DateTime.Now.Second % 20) == 0)
             {
                 //Let's simulate a data loss every time the time is a multiple of 20 seconds, and a backup just completed.
                 ServiceEventSource.Current.ServiceMessage(this, "Restore Started");
@@ -430,7 +435,7 @@ namespace Inventory.Service
                         this.ServiceInitializationParameters.ServiceName,
                         this.ServiceInitializationParameters.PartitionId);
 
-                    await fabricClient.ServiceManager.InvokeDataLossAsync(partitionSelector, DataLossMode.PartialDataLoss, cancellationToken);
+                    await fabricClient.TestManager.InvokeDataLossAsync(partitionSelector, DataLossMode.PartialDataLoss, cancellationToken);
                 }
             }
 
@@ -529,7 +534,7 @@ namespace Inventory.Service
             ServiceEventSource.Current.ServiceMessage(this, "Backup count dictionary updated: " + totalBackupCount);
             ServiceEventSource.Current.Message("Backup count dictionary updated: " + totalBackupCount);
 
-            if ((totalBackupCount%20) == 0)
+            if ((totalBackupCount % 20) == 0)
             {
                 //The following limits the number of backups stored to 20 per partition. The actual max might be more than 20 per partition since more backups 
                 //could have been created when deletion was taking place. 
@@ -539,7 +544,7 @@ namespace Inventory.Service
 
             //Simulate a restore/data loss event randomly. This assumes that all partitions have some state at this point. 
             //Five inventory items must be added for all five partitions to have state.
-            if ((totalBackupCount > 19) && (DateTime.Now.Second%20) == 0)
+            if ((totalBackupCount > 19) && (DateTime.Now.Second % 20) == 0)
             {
                 CancellationToken cancellationToken = default(CancellationToken);
 
@@ -551,7 +556,7 @@ namespace Inventory.Service
                         this.ServiceInitializationParameters.ServiceName,
                         this.ServiceInitializationParameters.PartitionId);
 
-                    await fabricClient.ServiceManager.InvokeDataLossAsync(partitionSelector, DataLossMode.PartialDataLoss, cancellationToken);
+                    await fabricClient.TestManager.InvokeDataLossAsync(partitionSelector, DataLossMode.PartialDataLoss, cancellationToken);
                 }
             }
 
@@ -569,6 +574,7 @@ namespace Inventory.Service
                 this.storageCredentials,
                 this.ServicePartition,
                 this.ServiceInitializationParameters);
+
             try
             {
                 await this.backupStore.InitializeAsync(cancellationToken);
@@ -579,10 +585,16 @@ namespace Inventory.Service
             }
         }
 
-        private static void PrintInventoryItems(IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems)
+        private async void PrintInventoryItemsAsync(IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems)
         {
             ServiceEventSource.Current.Message("PRINTING INVENTORY");
-            Dictionary<KeyValuePair<InventoryItemId, InventoryItem>, KeyValuePair<InventoryItemId, InventoryItem>> items = inventoryItems.ToDictionary(v => v);
+
+            Dictionary<KeyValuePair<InventoryItemId, InventoryItem>, KeyValuePair<InventoryItemId, InventoryItem>> items;
+
+            using (ITransaction tx = this.stateManager.CreateTransaction())
+            {
+                items = (await inventoryItems.CreateEnumerableAsync(tx)).ToDictionary(v => v);
+            }
 
             foreach (KeyValuePair<KeyValuePair<InventoryItemId, InventoryItem>, KeyValuePair<InventoryItemId, InventoryItem>> tempitem in items)
             {
@@ -603,7 +615,7 @@ namespace Inventory.Service
             {
                 using (ITransaction tx = this.stateManager.CreateTransaction())
                 {
-                    foreach (KeyValuePair<CustomerOrderActorMessageId, DateTime> request in recentRequests)
+                    foreach (KeyValuePair<CustomerOrderActorMessageId, DateTime> request in (await recentRequests.CreateEnumerableAsync(tx)))
                     {
                         //if we have a record of a message that is older than 2 hours from current time, then remove that record
                         //from both of the stale message tracking dictionaries.
@@ -626,6 +638,7 @@ namespace Inventory.Service
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+
             if (this.storageType == StorageTypes.Azure)
             {
                 await this.InitializeAsync(cancellationToken);
@@ -633,9 +646,15 @@ namespace Inventory.Service
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                ServiceEventSource.Current.ServiceMessage(this, "Checking inventory stock for {0} items.", await inventoryItems.GetCountAsync());
+                IEnumerable<InventoryItem> items;
 
-                foreach (InventoryItem item in inventoryItems.Select(x => x.Value))
+                using (ITransaction tx = this.stateManager.CreateTransaction())
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Checking inventory stock for {0} items.", await inventoryItems.GetCountAsync(tx));
+                    items = (await inventoryItems.CreateEnumerableAsync(tx)).Select(x => x.Value);
+                }
+
+                foreach (InventoryItem item in items)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
