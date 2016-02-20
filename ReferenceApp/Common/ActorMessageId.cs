@@ -5,9 +5,9 @@
 
 namespace Common
 {
+    using Microsoft.ServiceFabric.Actors;
     using System;
     using System.Runtime.Serialization;
-    using Microsoft.ServiceFabric.Actors;
 
     [DataContract]
     public class CustomerOrderActorMessageId : IFormattable, IComparable, IComparable<CustomerOrderActorMessageId>, IEquatable<CustomerOrderActorMessageId>
@@ -26,7 +26,7 @@ namespace Common
 
         int IComparable.CompareTo(object obj)
         {
-            return this.CompareTo((CustomerOrderActorMessageId) obj);
+            return this.CompareTo((CustomerOrderActorMessageId)obj);
         }
 
         public int CompareTo(CustomerOrderActorMessageId other)

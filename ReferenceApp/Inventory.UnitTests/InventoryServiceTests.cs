@@ -5,21 +5,33 @@
 
 namespace Inventory.UnitTests
 {
-    using System.Threading.Tasks;
     using Common;
     using Inventory.Domain;
     using Inventory.Service;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
+    using System;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class InventoryServiceTests
     {
+        private StatefulServiceParameters parameters = new StatefulServiceParameters(
+        null,
+        null,
+        Guid.NewGuid(),
+        new Uri("fabric:/someapp/someservice"),
+        "InventoryServiceType",
+        long.MaxValue
+        );
+
+
         [TestMethod]
         public async Task TestCreateAndIsItemInInventoryAsync()
         {
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager);
+
+            InventoryService target = new InventoryService(stateManager, parameters);
 
             InventoryItem expected = new InventoryItem("test", 1, 10, 1, 10);
 
@@ -37,7 +49,7 @@ namespace Inventory.UnitTests
             int expectedQuantity = 10;
             int quantityToAdd = 3;
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager);
+            InventoryService target = new InventoryService(stateManager, parameters);
 
             InventoryItem item = new InventoryItem("test", 1, expectedQuantity - quantityToAdd, 1, expectedQuantity);
 
@@ -56,7 +68,7 @@ namespace Inventory.UnitTests
             int expectedQuantity = 5;
             int quantityToRemove = 3;
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager);
+            InventoryService target = new InventoryService(stateManager, parameters);
 
             InventoryItem item = new InventoryItem("test", 1, expectedQuantity + quantityToRemove, 1, expectedQuantity);
 
@@ -74,7 +86,7 @@ namespace Inventory.UnitTests
             int expectedQuantity = 5;
             int quantityToRemove = 3;
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager);
+            InventoryService target = new InventoryService(stateManager, parameters);
 
             InventoryItem item = new InventoryItem("test", 1, totalStartingStock, 1, expectedQuantity);
 

@@ -5,23 +5,22 @@
 
 namespace Inventory.Service
 {
+    using Microsoft.ServiceFabric.Data;
     using System.Threading;
     using System.Threading.Tasks;
 
     public interface IBackupStore
     {
-        Task InitializeAsync(CancellationToken cancellationToken);
+        long backupFrequencyInSeconds
+        {
+            get;
+        }
 
-        Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken);
+        Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken);
 
-        Task UploadBackupFolderAsync(string backupFolder, string backupId, CancellationToken cancellationToken);
+        Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken);
 
-        Task<string> DownloadAnyBackupAsync(CancellationToken cancellationToken);
+        Task DeleteBackupsAsync(CancellationToken cancellationToken);
 
-        Task DeleteLastDownloadedBackupAsync(CancellationToken cancellationToken);
-
-        Task DeleteStoreAsync(CancellationToken cancellationToken);
-
-        Task DeleteBackupsAzureAsync(CancellationToken cancellationToken);
     }
 }

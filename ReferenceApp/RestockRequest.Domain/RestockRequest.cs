@@ -5,9 +5,9 @@
 
 namespace RestockRequest.Domain
 {
+    using Inventory.Domain;
     using System;
     using System.Runtime.Serialization;
-    using Inventory.Domain;
 
     [DataContract]
     public sealed class RestockRequest

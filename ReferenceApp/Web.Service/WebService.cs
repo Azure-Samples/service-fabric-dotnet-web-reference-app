@@ -5,9 +5,9 @@
 
 namespace Web.Service
 {
-    using System.Collections.Generic;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
+    using System.Collections.Generic;
 
     internal class WebService : StatelessService
     {

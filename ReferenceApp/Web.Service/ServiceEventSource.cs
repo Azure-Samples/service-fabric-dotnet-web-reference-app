@@ -5,10 +5,10 @@
 
 namespace Web.Service
 {
+    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
     using System.Diagnostics.Tracing;
     using System.Fabric;
-    using Microsoft.ServiceFabric.Services.Runtime;
 
     [EventSource(Name = "MyCompany-Web_UIApplication-WebService")]
     internal sealed class ServiceEventSource : EventSource
@@ -51,7 +51,7 @@ namespace Web.Service
                     finalMessage);
             }
         }
-        
+
         [Event(3, Level = EventLevel.Informational, Message = "Service host process {0} registered service type {1}")]
         public void ServiceTypeRegistered(int hostProcessId, string serviceType)
         {
