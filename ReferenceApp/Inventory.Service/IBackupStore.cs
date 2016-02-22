@@ -10,7 +10,7 @@ namespace Inventory.Service
 
     public interface IBackupStore
     {
-        Task InitializeAsync(CancellationToken cancellationToken);
+        Task InitializeBackupStoreAsync(CancellationToken cancellationToken);
 
         Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken);
 

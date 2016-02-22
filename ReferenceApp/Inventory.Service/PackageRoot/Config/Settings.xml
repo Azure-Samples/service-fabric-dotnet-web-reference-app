@@ -8,9 +8,9 @@
   <Section Name="ReplicatorSecurityConfig" />
 
   <!-- Add your custom configuration sections and parameters here. -->
-  <!--
-  <Section Name="MyConfigSection">
-    <Parameter Name="MyParameter" Value="Value1" />
+  
+  <Section Name="Inventory.Service.Settings">
+    <Parameter Name="BackupMode" Value="None" />
   </Section>
-  -->
+  
 </Settings>

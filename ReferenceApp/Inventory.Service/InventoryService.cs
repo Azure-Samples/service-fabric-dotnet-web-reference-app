@@ -49,10 +49,11 @@ namespace Inventory.Service
 
 
         //Set local or cloud backup
-        private StorageTypes storageType = StorageTypes.Azure;
+        private StorageTypes backupStorageType = StorageTypes.None;
 
         public InventoryService()
         {
+            initializeConfig();
         }
 
         /// <summary>
@@ -62,6 +63,33 @@ namespace Inventory.Service
         public InventoryService(IReliableStateManager stateManager)
         {
             this.stateManager = stateManager;
+            initializeConfig();
+        }
+
+        private void initializeConfig()
+        {
+            CodePackageActivationContext context = FabricRuntime.GetActivationContext();
+            var configPackage = context.GetConfigurationPackageObject("Config");
+            var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
+            string backupSettingValue = configSection.Parameters["BackupMode"].Value;
+
+            if (string.Equals(backupSettingValue, "none", StringComparison.InvariantCultureIgnoreCase))
+            {
+                this.backupStorageType = StorageTypes.None;
+            }
+            else if (string.Equals(backupSettingValue, "azure", StringComparison.InvariantCultureIgnoreCase))
+            {
+                this.backupStorageType = StorageTypes.Azure;
+            }
+            else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
+            {
+                this.backupStorageType = StorageTypes.Local;
+            }
+            else
+            {
+                throw new ArgumentException("Unknown backup type");
+            }
+
         }
 
         /// <summary>
@@ -148,8 +176,7 @@ namespace Inventory.Service
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, DateTime>>(ActorMessageDictionaryName);
 
             IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>> requestHistory =
-                await
-                    this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
+                await this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
 
             int removed = 0;
 
@@ -267,18 +294,15 @@ namespace Inventory.Service
 
             this.PrintInventoryItemsAsync(inventoryItems);
 
-            IEnumerable<InventoryItemView> results;
+            IEnumerable<InventoryItemView> results = null;
 
             using (ITransaction tx = this.stateManager.CreateTransaction())
             {
-                results = (await inventoryItems.CreateEnumerableAsync(tx)).Select(x => (InventoryItemView)x.Value).Where(x => x.CustomerAvailableStock > 0);
-            }
-
-            List<InventoryItemView> resultList = results.ToList<InventoryItemView>();
-
-            foreach (InventoryItemView tempResult in resultList)
-            {
-                ServiceEventSource.Current.Message("{0}|{1}", tempResult.Id, tempResult.Description);
+                long count = await inventoryItems.GetCountAsync(tx);
+                if (count > 0)
+                {
+                    results = (await inventoryItems.CreateEnumerableAsync(tx)).Select(x => (InventoryItemView)x.Value).Where(x => x.CustomerAvailableStock > 0);
+                }
             }
 
             return results;
@@ -345,27 +369,32 @@ namespace Inventory.Service
         protected async Task<bool> OnDataLossAsync(CancellationToken cancellationToken)
         {
             //If restoring from Azure BlobStore
-            if (this.storageType == StorageTypes.Azure)
+            if (this.backupStorageType == StorageTypes.Azure)
             {
-                await this.InitializeAsync(cancellationToken);
+                await this.InitializeAzureBackupStoreAsync(cancellationToken);
             }
-
 
             try
             {
                 string backupFolder;
 
                 //If restoring from local directory
-                if (this.storageType == StorageTypes.Local)
+                if (this.backupStorageType == StorageTypes.Local)
                 {
                     backupFolder = this.GetLastBackupFolder();
                 }
                 //If restoring from Azure BlobStore
-                else
+                else if (this.backupStorageType == StorageTypes.Azure)
                 {
                     backupFolder = await this.backupStore.DownloadAnyBackupAsync(cancellationToken);
                 }
-
+                else
+                {
+                    //since we have no backup configured, we return false to indicate
+                    //that state has not changed. This replica will become the basis
+                    //for future replica builds
+                    return false;
+                }
 
                 ServiceEventSource.Current.ServiceMessage(this, "Restoration Folder Path " + backupFolder);
                 await this.StateManager.RestoreAsync(backupFolder, RestorePolicy.Force, cancellationToken);
@@ -391,7 +420,6 @@ namespace Inventory.Service
         protected override Task RunAsync(CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.Message("InventoryService ReliableDictionary successfully created");
-            //If restoring from Azure BlobStore
 
             return Task.WhenAll(this.PeriodicInventoryCheck(cancellationToken), this.PeriodicOldMessageTrimming(cancellationToken));
         }
@@ -414,9 +442,7 @@ namespace Inventory.Service
                 await txn.CommitAsync();
             }
 
-
             ServiceEventSource.Current.Message("Backup count dictionary updated: " + totalBackupCount);
-
 
             if ((totalBackupCount % 10) == 0)
             {
@@ -567,7 +593,7 @@ namespace Inventory.Service
         }
 
 
-        private async Task InitializeAsync(CancellationToken cancellationToken)
+        private async Task InitializeAzureBackupStoreAsync(CancellationToken cancellationToken)
         {
             this.backupStore = new BackupStore(
                 this.blobContainerEndpoint,
@@ -577,7 +603,7 @@ namespace Inventory.Service
 
             try
             {
-                await this.backupStore.InitializeAsync(cancellationToken);
+                await this.backupStore.InitializeBackupStoreAsync(cancellationToken);
             }
             catch (Exception e)
             {
@@ -639,9 +665,9 @@ namespace Inventory.Service
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
-            if (this.storageType == StorageTypes.Azure)
+            if (this.backupStorageType == StorageTypes.Azure)
             {
-                await this.InitializeAsync(cancellationToken);
+                await this.InitializeAzureBackupStoreAsync(cancellationToken);
             }
 
             while (!cancellationToken.IsCancellationRequested)
@@ -705,15 +731,15 @@ namespace Inventory.Service
                     {
                         ServiceEventSource.Current.ServiceMessage(this, "Failed to place restock order for item {0}. {1}", item.Id, e.ToString());
                     }
+                }
 
-                    if (this.storageType == StorageTypes.Local)
-                    {
-                        await this.StateManager.BackupAsync(this.BackupCallbackAsync);
-                    }
-                    else
-                    {
-                        await this.StateManager.BackupAsync(this.BackupCallbackAzureAsync);
-                    }
+                if (this.backupStorageType == StorageTypes.Local)
+                {
+                    await this.StateManager.BackupAsync(this.BackupCallbackAsync);
+                }
+                else if (this.backupStorageType == StorageTypes.Azure)
+                {
+                    await this.StateManager.BackupAsync(this.BackupCallbackAzureAsync);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
@@ -723,7 +749,8 @@ namespace Inventory.Service
         private enum StorageTypes
         {
             Azure,
-            Local
+            Local,
+            None
         };
     }
 }

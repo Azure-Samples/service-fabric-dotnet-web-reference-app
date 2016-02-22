@@ -60,7 +60,7 @@ namespace Inventory.Service
         }
 
 
-        public async Task InitializeAsync(CancellationToken cancellationToken)
+        public async Task InitializeBackupStoreAsync(CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.Message("BackupStore: InitializeAsync");
 

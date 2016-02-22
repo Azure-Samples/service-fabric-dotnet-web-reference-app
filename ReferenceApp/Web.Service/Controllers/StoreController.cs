@@ -42,7 +42,12 @@ namespace Web.Service.Controllers
             {
                 long minKey = (p.PartitionInformation as Int64RangePartitionInformation).LowKey;
                 IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(minKey, serviceName);
-                itemList.AddRange(await inventoryServiceClient.GetCustomerInventoryAsync());
+
+                var result = await inventoryServiceClient.GetCustomerInventoryAsync();
+                if (result != null)
+                {
+                    itemList.AddRange(result);
+                }                
             }
 
             return itemList;
