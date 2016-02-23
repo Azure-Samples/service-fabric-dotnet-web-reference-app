@@ -5,23 +5,35 @@
 
 namespace Inventory.Service
 {
+    using Microsoft.ServiceFabric.Data;
     using System.Threading;
     using System.Threading.Tasks;
 
     public interface IBackupStore
     {
-        Task InitializeBackupStoreAsync(CancellationToken cancellationToken);
+        //Task InitializeBackupStoreAsync(CancellationToken cancellationToken);
 
-        Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken);
+        //Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken);
 
-        Task UploadBackupFolderAsync(string backupFolder, string backupId, CancellationToken cancellationToken);
+        //Task UploadBackupFolderAsync(string backupFolder, string backupId, CancellationToken cancellationToken);
 
-        Task<string> DownloadAnyBackupAsync(CancellationToken cancellationToken);
+        //Task<string> DownloadAnyBackupAsync(CancellationToken cancellationToken);
 
-        Task DeleteLastDownloadedBackupAsync(CancellationToken cancellationToken);
+        //Task DeleteLastDownloadedBackupAsync(CancellationToken cancellationToken);
 
-        Task DeleteStoreAsync(CancellationToken cancellationToken);
+        //Task DeleteStoreAsync(CancellationToken cancellationToken);
 
-        Task DeleteBackupsAzureAsync(CancellationToken cancellationToken);
+        //Task DeleteBackupsAzureAsync(CancellationToken cancellationToken);
+        long backupFrequencyInMinutes;
+
+        Task<string> GetLastBackup(CancellationToken cancellationToken);
+
+        Task CopyBackupAsync(string backupFolder, string backupId, CancellationToken cancellationToken);
+
+        Task DeleteBackupsAsync(long maxToKeep, CancellationToken cancellationToken);
+
+        Task<string> ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken);
+
+
     }
 }

@@ -97,7 +97,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BackupStore.cs" />
+    <Compile Include="LocalBackupStore.cs" />
+    <Compile Include="AzureBackupStore.cs" />
     <Compile Include="IBackupStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="InventoryService.cs" />

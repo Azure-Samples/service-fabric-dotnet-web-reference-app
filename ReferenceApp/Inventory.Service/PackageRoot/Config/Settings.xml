@@ -4,13 +4,18 @@
   <Section Name="ReplicatorConfig">
     <Parameter Name="ReplicatorEndpoint" Value="ReplicatorEndpoint" />
   </Section>
-  <!-- This is used for securing StateManager's replication traffic. -->
-  <Section Name="ReplicatorSecurityConfig" />
-
-  <!-- Add your custom configuration sections and parameters here. -->
-  
   <Section Name="Inventory.Service.Settings">
-    <Parameter Name="BackupMode" Value="None" />
+    <Parameter Name="BackupMode" Value="local" />
   </Section>
-  
+  <Section Name="Inventory.Service.BackupSettings.Azure">
+    <Parameter Name="BackupAccountName" Value="TBD=" />
+    <Parameter Name="PrimaryKeyForBackupTestAccount" Value="TBD=" />
+    <Parameter Name="BlobServiceEndpointAddress" Value="https://TBD.net/" />
+    <Parameter Name="BackupFrequencyInMinutes" Value="1" />    
+  </Section>
+  <Section Name="Inventory.Service.BackupSettings.Local">
+    <Parameter Name="LocalBackupTempPath" Value="C:\temp" />
+    <Parameter Name="BackupFrequencyInMinutes" Value="1" />
+  </Section>
+
 </Settings>
