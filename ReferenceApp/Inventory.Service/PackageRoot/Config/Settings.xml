@@ -11,11 +11,13 @@
     <Parameter Name="BackupAccountName" Value="TBD=" />
     <Parameter Name="PrimaryKeyForBackupTestAccount" Value="TBD=" />
     <Parameter Name="BlobServiceEndpointAddress" Value="https://TBD.net/" />
-    <Parameter Name="BackupFrequencyInMinutes" Value="1" />    
+    <Parameter Name="BackupFrequencyInSeconds" Value="10" />
+    <Parameter Name="MaxBackupsToKeep" Value="5" />
   </Section>
   <Section Name="Inventory.Service.BackupSettings.Local">
-    <Parameter Name="LocalBackupTempPath" Value="C:\temp" />
-    <Parameter Name="BackupFrequencyInMinutes" Value="1" />
+    <Parameter Name="BackupArchivalPath" Value="C:\temp" />
+    <Parameter Name="BackupFrequencyInSeconds" Value="10" />
+    <Parameter Name="MaxBackupsToKeep" Value="5" />
   </Section>
 
 </Settings>

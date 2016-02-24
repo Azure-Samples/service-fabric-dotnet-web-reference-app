@@ -17,100 +17,108 @@ namespace Inventory.Service
     using Microsoft.WindowsAzure.Storage.Auth;
     using Microsoft.WindowsAzure.Storage.Blob;
     using System.Fabric.Description;
-    public class LocalBackupManager : IBackupStore
+    using Microsoft.ServiceFabric.Data;
+
+    public class DiskBackupManager : IBackupStore
     {
-        private CodePackageActivationContext context;
-        private string partitionId;
-        private string restoreTempFolder;
-        private string targetZipFile;
-        private string targetUnzippedFolder;
-        private bool pathTooLongExceptionSeen;
+        private string PartitionArchiveFolder;
+        private string PartitionTempDirectory;
+        private long backupFrequencyInSeconds;
+        private int MaxBackupsToKeep;
 
-        public long backupFrequencyInMinutes;
-
-        public LocalBackupManager(CodePackageActivationContext context, ConfigurationSection configSection, string partitionId)
+        long IBackupStore.backupFrequencyInSeconds
         {
-            this.context = context;
-            this.partitionId = partitionId;
-            string backupSettingValue = configSection.Parameters["LocalBackupTempPath"].Value;
-            this.backupFrequencyInMinutes = long.Parse(configSection.Parameters["BackupFrequencyInMinutes"].Value);
-            string tmpFolderPath = this.context.TempDirectory;
-
-            this.restoreTempFolder = Path.Combine(tmpFolderPath, "Restore", this.partitionId);
-
-            this.targetZipFile = Path.Combine(this.restoreTempFolder, "Restore.zip");
-
-            this.targetUnzippedFolder = Path.Combine(this.restoreTempFolder, "Extracted");
-
-            ServiceEventSource.Current.Message("TmpFolder: {0} {1}", this.restoreTempFolder, this.restoreTempFolder.Count());
-            ServiceEventSource.Current.Message("UnzipFolder: {0} {1}", this.targetUnzippedFolder, this.targetUnzippedFolder.Count());
+            get
+            {
+                return this.backupFrequencyInSeconds;
+            }
         }
 
-        public Task<string> GetLastBackup(CancellationToken cancellationToken)
+        public DiskBackupManager(ConfigurationSection configSection, string partitionId, string codePackageTempDirectory)
         {
-            string strSource = Path.Combine(this.localBackupStore, this.partitionId);
+            string BackupArchivalPath = configSection.Parameters["BackupArchivalPath"].Value;
+            this.backupFrequencyInSeconds = long.Parse(configSection.Parameters["BackupFrequencyInSeconds"].Value);
+            this.MaxBackupsToKeep = int.Parse(configSection.Parameters["MaxBackupsToKeep"].Value);
 
+            this.PartitionArchiveFolder = Path.Combine(BackupArchivalPath, "Backups", partitionId);
+            this.PartitionTempDirectory = Path.Combine(codePackageTempDirectory, partitionId);            
 
-            DirectoryInfo dirInfo = new DirectoryInfo(strSource);
-            {
-                foreach (DirectoryInfo tempDir in dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime))
-                {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "tempDir is " + this.localBackupStore + this.ServicePartition.PartitionInfo.Id + @"\" + tempDir);
-                    return (this.localBackupStore + this.ServicePartition.PartitionInfo.Id + @"\" + tempDir);
-                }
-            }
-
-            return null;
+            ServiceEventSource.Current.Message(
+                "DiskBackupManager constructed IntervalinSec:{0}, archivePath:{1}, tempPath:{2}, backupsToKeep:{3}",
+                this.backupFrequencyInSeconds,
+                this.PartitionArchiveFolder,
+                this.PartitionTempDirectory,
+                this.MaxBackupsToKeep);
         }
 
-        public async Task CopyBackupAsync(string backupFolder, string backupId, CancellationToken cancellationToken)
+        public Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken)
         {
-            if (!System.IO.Directory.Exists(strDestination))
+            ServiceEventSource.Current.Message("Restoring backup to temp source:{0} destination:{1}", this.PartitionArchiveFolder, this.PartitionTempDirectory);
+
+            DirectoryInfo dirInfo = new DirectoryInfo(this.PartitionArchiveFolder);
+
+            string backupZip = dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime).First().FullName;
+
+            string zipPath = Path.Combine(backupZip, "Backup.zip");
+
+            ServiceEventSource.Current.Message("latest zip backup is {0}", zipPath);
+
+            DirectoryInfo directoryInfo = new DirectoryInfo(this.PartitionTempDirectory);
+            if(directoryInfo.Exists)
             {
-                Directory.CreateDirectory(strDestination);
+                directoryInfo.Delete(true);
             }
 
-            DirectoryInfo dirInfo = new DirectoryInfo(strSource);
-            FileInfo[] files = dirInfo.GetFiles();
-            foreach (FileInfo tempfile in files)
-            {
-                tempfile.CopyTo(Path.Combine(strDestination, tempfile.Name));
-            }
+            directoryInfo.Create();
 
-            DirectoryInfo[] directories = dirInfo.GetDirectories();
-            foreach (DirectoryInfo tempdir in directories)
-            {
-                await this.CopyDirectory(Path.Combine(strSource, tempdir.Name), Path.Combine(strDestination, tempdir.Name));
-            }
+            ZipFile.ExtractToDirectory(zipPath, this.PartitionTempDirectory);
 
-            string pathToFolder = Path.Combine(this.localBackupStore, partitionId, backupId);
-            ServiceEventSource.Current.ServiceMessage(this, "Backup Folder Path " + pathToFolder);
+            ServiceEventSource.Current.Message("Zip backup {0} extracted to {1}", zipPath, this.PartitionTempDirectory);
 
-            await this.CopyDirectory(backupFolder, pathToFolder);
+            return Task.FromResult<string>(this.PartitionTempDirectory);
 
-            //var blob = this.backupBlobContainer.GetBlockBlobReference(backupId);
-            //await blob.UploadFromFileAsync(pathToZippedFolder, FileMode.Open, CancellationToken.None);
-            //Service.WriteTrace("BackupStore: UploadBackupFolderAsync: success.");
         }
 
-        public async Task DeleteBackupsAsync(CancellationToken cancellationToken, long maxToKeep)
+        public async Task DeleteBackupsAsync(CancellationToken cancellationToken)
         {
-            if (!Directory.Exists(strSource))
+            ServiceEventSource.Current.Message("deleting old backups");
+
+            if (!Directory.Exists(this.PartitionArchiveFolder))
             {
                 //Nothing to delete; Backups may not even have been created for the partition
                 return;
             }
 
-            System.IO.DirectoryInfo dirInfo = new DirectoryInfo(strSource);
+            DirectoryInfo dirInfo = new DirectoryInfo(this.PartitionArchiveFolder);
 
-            foreach (DirectoryInfo tempDir in dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime).Skip(keepBehind))
+            var oldBackups = dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime).Skip(this.MaxBackupsToKeep);
+
+            foreach (DirectoryInfo oldBackup in oldBackups)
             {
-                tempDir.Delete(true);
+                ServiceEventSource.Current.Message("Deleting old backup {0}", oldBackup.FullName);
+                oldBackup.Delete(true);
             }
 
+            ServiceEventSource.Current.Message("Old backups deleted");
+
             return;
+        }
+        
+        public Task<string> ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
+        {
+            string fullArchiveDirectory = Path.Combine(this.PartitionArchiveFolder, Guid.NewGuid().ToString("N"));
+
+            DirectoryInfo dirInfo = new DirectoryInfo(fullArchiveDirectory);
+            dirInfo.Create();
+
+            string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
+
+            ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
+
+            DirectoryInfo backupDirectory = new DirectoryInfo(backupInfo.Directory);
+            backupDirectory.Delete(true);
+
+            return Task.FromResult<string>(fullArchivePath);
         }
     }
 }

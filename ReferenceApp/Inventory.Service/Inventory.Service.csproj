@@ -97,6 +97,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InventoryServiceFactory.cs" />
     <Compile Include="LocalBackupStore.cs" />
     <Compile Include="AzureBackupStore.cs" />
     <Compile Include="IBackupStore.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="InventoryService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ServiceEventSource.cs" />
+    <Compile Include="StatefulServiceParameters.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PackageRoot\Config\Settings.xml" />

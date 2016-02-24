@@ -17,7 +17,7 @@ namespace Inventory.Service
     using Microsoft.WindowsAzure.Storage.Auth;
     using Microsoft.WindowsAzure.Storage.Blob;
     using System.Fabric.Description;
-    public class AzureBackupManager : IBackupStore
+    public class AzureBlobBackupManager /*: IBackupStore*/
     {
         private readonly CloudBlobClient cloudBlobClient;
         private CloudBlobContainer backupBlobContainer;
@@ -32,13 +32,13 @@ namespace Inventory.Service
 
         public long backupFrequencyInMinutes;
 
-        public AzureBackupManager(CodePackageActivationContext context, ConfigurationSection configSection, string partitionId)
+        public AzureBlobBackupManager(CodePackageActivationContext context, ConfigurationSection configSection, string partitionId)
         {
             string backupAccountName = configSection.Parameters["BackupAccountName"].Value;
             string backupAccountKey = configSection.Parameters["PrimaryKeyForBackupTestAccount"].Value;
             string blobEndpointAddress = configSection.Parameters["BlobServiceEndpointAddress"].Value;
 
-            this.backupFrequencyInMinutes = long.Parse(configSection.Parameters["BackupFrequencyInMinutes"].Value);
+            this.backupFrequencyInMinutes = long.Parse(configSection.Parameters["BackupFrequencyInSeconds"].Value);
 
             StorageCredentials storageCredentials = new StorageCredentials(backupAccountName, backupAccountKey);
 
@@ -99,33 +99,30 @@ namespace Inventory.Service
             ServiceEventSource.Current.Message("BackupStore: UploadBackupFolderAsync: success.");
         }
 
-        public async Task<string> GetLastBackup(CancellationToken cancellationToken)
+        public async Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.Message("BackupStore: Download any backup async called.");
 
-            while (true)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            this.lastBackupBlob = this.GetAnyBackupBlob();
+
+            using (FileStream stream = File.Open(this.targetZipFile, FileMode.CreateNew))
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                ServiceEventSource.Current.Message("BackupStore: Downloading {0}", this.lastBackupBlob.Name);
 
-                this.lastBackupBlob = this.GetAnyBackupBlob();
+                await this.lastBackupBlob.DownloadToStreamAsync(stream, cancellationToken);
 
-                using (FileStream stream = File.Open(this.targetZipFile, FileMode.CreateNew))
+                stream.Position = 0;
+
+                using (ZipArchive zipArchive = new ZipArchive(stream))
                 {
-                    ServiceEventSource.Current.Message("BackupStore: Downloading {0}", this.lastBackupBlob.Name);
-
-                    await this.lastBackupBlob.DownloadToStreamAsync(stream, cancellationToken);
-
-                    stream.Position = 0;
-
-                    using (ZipArchive zipArchive = new ZipArchive(stream))
-                    {
-                        zipArchive.ExtractToDirectory(this.targetUnzippedFolder);
-                    }
-
-                    ServiceEventSource.Current.Message("BackupStore: Downloaded {0} in to {1}", this.lastBackupBlob.Name, this.targetUnzippedFolder);
-
-                    return this.targetUnzippedFolder;
+                    zipArchive.ExtractToDirectory(this.targetUnzippedFolder);
                 }
+
+                ServiceEventSource.Current.Message("BackupStore: Downloaded {0} in to {1}", this.lastBackupBlob.Name, this.targetUnzippedFolder);
+
+                return this.targetUnzippedFolder;
             }
         }
 

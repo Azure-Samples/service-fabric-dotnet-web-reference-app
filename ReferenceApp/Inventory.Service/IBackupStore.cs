@@ -24,15 +24,17 @@ namespace Inventory.Service
         //Task DeleteStoreAsync(CancellationToken cancellationToken);
 
         //Task DeleteBackupsAzureAsync(CancellationToken cancellationToken);
-        long backupFrequencyInMinutes;
-
-        Task<string> GetLastBackup(CancellationToken cancellationToken);
-
-        Task CopyBackupAsync(string backupFolder, string backupId, CancellationToken cancellationToken);
-
-        Task DeleteBackupsAsync(long maxToKeep, CancellationToken cancellationToken);
+        long backupFrequencyInSeconds
+        {
+            get;
+        }
 
         Task<string> ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken);
+
+        Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken);
+
+        Task DeleteBackupsAsync(CancellationToken cancellationToken);
+
 
 
     }
