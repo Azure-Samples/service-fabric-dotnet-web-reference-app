@@ -5,11 +5,11 @@
 
 namespace CustomerOrder.Actor
 {
+    using CustomerOrder.Domain;
     using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
     using System.Text;
-    using CustomerOrder.Domain;
 
     [DataContract]
     internal sealed class CustomerOrderActorState

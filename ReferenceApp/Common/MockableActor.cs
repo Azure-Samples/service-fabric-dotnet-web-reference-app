@@ -5,9 +5,9 @@
 
 namespace Common
 {
+    using Microsoft.ServiceFabric.Actors;
     using System;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors;
 
     public class MockableActor<T> : StatefulActor<T> where T : class
     {

@@ -5,14 +5,13 @@
 
 namespace Mocks
 {
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Data.Collections;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Data.Collections;
-    using System.Collections;
     public class MockReliableQueue<T> : IReliableQueue<T>
     {
         private ConcurrentQueue<T> queue = new ConcurrentQueue<T>();

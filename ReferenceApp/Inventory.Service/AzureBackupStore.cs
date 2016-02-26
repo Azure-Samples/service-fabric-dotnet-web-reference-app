@@ -5,171 +5,140 @@
 
 namespace Inventory.Service
 {
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.WindowsAzure.Storage.Auth;
+    using Microsoft.WindowsAzure.Storage.Blob;
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Fabric;
+    using System.Fabric.Description;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.WindowsAzure.Storage.Auth;
-    using Microsoft.WindowsAzure.Storage.Blob;
-    using System.Fabric.Description;
-    public class AzureBlobBackupManager /*: IBackupStore*/
+
+    public class AzureBlobBackupManager : IBackupStore
     {
         private readonly CloudBlobClient cloudBlobClient;
         private CloudBlobContainer backupBlobContainer;
-        private CloudBlockBlob lastBackupBlob;
+        private int MaxBackupsToKeep;
 
-        private string restoreTempFolder;
-        private string targetZipFile;
-        private string targetUnzippedFolder;
-
-        private CodePackageActivationContext context;
+        private string PartitionTempDirectory;
         private string partitionId;
 
-        public long backupFrequencyInMinutes;
+        private long backupFrequencyInSeconds;
 
-        public AzureBlobBackupManager(CodePackageActivationContext context, ConfigurationSection configSection, string partitionId)
+        long IBackupStore.backupFrequencyInSeconds
+        {
+            get
+            {
+                return backupFrequencyInSeconds;
+            }
+        }
+
+        public AzureBlobBackupManager(ConfigurationSection configSection, string partitionId, string codePackageTempDirectory)
         {
             string backupAccountName = configSection.Parameters["BackupAccountName"].Value;
             string backupAccountKey = configSection.Parameters["PrimaryKeyForBackupTestAccount"].Value;
             string blobEndpointAddress = configSection.Parameters["BlobServiceEndpointAddress"].Value;
 
-            this.backupFrequencyInMinutes = long.Parse(configSection.Parameters["BackupFrequencyInSeconds"].Value);
+            this.backupFrequencyInSeconds = long.Parse(configSection.Parameters["BackupFrequencyInSeconds"].Value);
+            this.MaxBackupsToKeep = int.Parse(configSection.Parameters["MaxBackupsToKeep"].Value);
+            this.partitionId = partitionId;
+            this.PartitionTempDirectory = Path.Combine(codePackageTempDirectory, partitionId);
 
             StorageCredentials storageCredentials = new StorageCredentials(backupAccountName, backupAccountKey);
-
             this.cloudBlobClient = new CloudBlobClient(new Uri(blobEndpointAddress), storageCredentials);
             this.backupBlobContainer = this.cloudBlobClient.GetContainerReference(this.partitionId);
             this.backupBlobContainer.CreateIfNotExists();
-
-            this.context = context;
-            this.partitionId = partitionId;
-
         }
 
-        public async Task DeleteBackupsAsync(CancellationToken cancellationToken, long maxToKeep)
+        public async Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
         {
-            if (this.backupBlobContainer.Exists())
-            {
-                foreach (IListBlobItem item in this.backupBlobContainer.ListBlobs(null, false))
-                {
-                    CloudBlockBlob theblob = (CloudBlockBlob)item;
-                    if (theblob.Properties.LastModified >= DateTime.UtcNow.AddMinutes(-1 * 3))
-                    {
-                        await theblob.DeleteAsync();
-                    }
-                }
-            }
-        }
+            ServiceEventSource.Current.Message("AzureBlobBackupManager: Archive Called.");
 
-        public async Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken)
-        {
-            bool exists = false;
-            BlobResultSegment resultSegment = await this.backupBlobContainer.ListBlobsSegmentedAsync(new BlobContinuationToken());
-            while (resultSegment.ContinuationToken != null)
-            {
-                if (resultSegment.Results.Count() > 0)
-                {
-                    exists = true;
-                    break;
-                }
+            string fullArchiveDirectory = Path.Combine(this.PartitionTempDirectory, Guid.NewGuid().ToString("N"));
+            string blobName = string.Format("{0}_{1}", Guid.NewGuid().ToString("N"), "Backup.zip");
+            string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
 
-                resultSegment = await this.backupBlobContainer.ListBlobsSegmentedAsync(resultSegment.ContinuationToken);
-            }
+            ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
 
-            ServiceEventSource.Current.Message("BackupStore: CheckIfBackupExistsInShareAsync returned " + exists.ToString().ToLowerInvariant());
-            return exists;
-        }
+            DirectoryInfo backupDirectory = new DirectoryInfo(backupInfo.Directory);
+            backupDirectory.Delete(true);
 
-        public async Task CopyBackupAsync(string backupFolder, string backupId, CancellationToken cancellationToken)
-        {
-            ServiceEventSource.Current.Message("BackupStore: UploadBackupFolderAsync: called.");
+            CloudBlockBlob blob = this.backupBlobContainer.GetBlockBlobReference(blobName);
+            await blob.UploadFromFileAsync(fullArchivePath, FileMode.Open, CancellationToken.None);
 
-            string pathToZippedFolder = Path.Combine(this.context.WorkDirectory, backupId + @".zip");
+            DirectoryInfo tempDirectory = new DirectoryInfo(fullArchiveDirectory);
+            tempDirectory.Delete(true);
 
-            ZipFile.CreateFromDirectory(backupFolder, pathToZippedFolder);
-
-            CloudBlockBlob blob = this.backupBlobContainer.GetBlockBlobReference(backupId);
-            await blob.UploadFromFileAsync(pathToZippedFolder, FileMode.Open, CancellationToken.None);
-
-            ServiceEventSource.Current.Message("BackupStore: UploadBackupFolderAsync: success.");
+            ServiceEventSource.Current.Message("AzureBlobBackupManager: UploadBackupFolderAsync: success.");
         }
 
         public async Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken)
         {
-            ServiceEventSource.Current.Message("BackupStore: Download any backup async called.");
+            ServiceEventSource.Current.Message("AzureBlobBackupManager: Download backup async called.");
 
-            cancellationToken.ThrowIfCancellationRequested();
+            var lastBackupBlob = (await this.GetBackupBlobs(true)).First();
 
-            this.lastBackupBlob = this.GetAnyBackupBlob();
+            ServiceEventSource.Current.Message("AzureBlobBackupManager: Downloading {0}", lastBackupBlob.Name);
 
-            using (FileStream stream = File.Open(this.targetZipFile, FileMode.CreateNew))
+            string downloadId = Guid.NewGuid().ToString("N");
+
+            string zipPath = Path.Combine(this.PartitionTempDirectory, string.Format("{0}_Backup.zip", downloadId));
+
+            lastBackupBlob.DownloadToFile(zipPath, FileMode.CreateNew);
+
+            var restorePath = Path.Combine(this.PartitionTempDirectory, downloadId);
+
+            ZipFile.ExtractToDirectory(zipPath, restorePath);
+
+            ServiceEventSource.Current.Message("AzureBlobBackupManager: Downloaded {0} in to {1}", lastBackupBlob.Name, restorePath);
+
+            return restorePath;
+
+        }
+
+        public async Task DeleteBackupsAsync(CancellationToken cancellationToken)
+        {
+            if (this.backupBlobContainer.Exists())
             {
-                ServiceEventSource.Current.Message("BackupStore: Downloading {0}", this.lastBackupBlob.Name);
 
-                await this.lastBackupBlob.DownloadToStreamAsync(stream, cancellationToken);
+                ServiceEventSource.Current.Message("AzureBlobBackupManager: Deleting old backups");
 
-                stream.Position = 0;
+                var oldBackups = (await GetBackupBlobs(true)).Skip(this.MaxBackupsToKeep);
 
-                using (ZipArchive zipArchive = new ZipArchive(stream))
+                foreach (var backup in oldBackups)
                 {
-                    zipArchive.ExtractToDirectory(this.targetUnzippedFolder);
+                    ServiceEventSource.Current.Message("AzureBlobBackupManager: Deleting {0}", backup.Name);
+                    await backup.DeleteAsync(cancellationToken);
                 }
-
-                ServiceEventSource.Current.Message("BackupStore: Downloaded {0} in to {1}", this.lastBackupBlob.Name, this.targetUnzippedFolder);
-
-                return this.targetUnzippedFolder;
             }
         }
 
-        public async Task DeleteLastDownloadedBackupAsync(System.Threading.CancellationToken cancellationToken)
-        {
-            ServiceEventSource.Current.Message("BackupStore: Deleting last downloaded backup.");
-
-            Trace.Assert(this.lastBackupBlob != null);
-            Trace.Assert(this.restoreTempFolder != null);
-            Trace.Assert(true == await this.lastBackupBlob.ExistsAsync(cancellationToken));
-
-            await this.lastBackupBlob.DeleteAsync(cancellationToken);
-
-            this.lastBackupBlob = null;
-
-            Directory.Delete(this.restoreTempFolder, true);
-
-            ServiceEventSource.Current.Message("BackupStore: Deleted last downloaded backup.");
-        }
-
-        public Task DeleteStoreAsync(CancellationToken cancellationToken)
-        {
-            ServiceEventSource.Current.Message("BackupStore: Deleting backup store.");
-
-
-            return this.backupBlobContainer.DeleteIfExistsAsync(cancellationToken);
-        }
-
-        private CloudBlockBlob GetAnyBackupBlob()
+        private async Task<IEnumerable<CloudBlockBlob>> GetBackupBlobs(bool sorted)
         {
             IEnumerable<IListBlobItem> blobs = this.backupBlobContainer.ListBlobs();
 
-            foreach (IListBlobItem blobList in blobs)
+            ServiceEventSource.Current.Message("AzureBlobBackupManager: Got {0} blobs", blobs.Count());
+
+            List<CloudBlockBlob> itemizedBlobs = new List<CloudBlockBlob>();
+
+            foreach (CloudBlockBlob cbb in blobs)
             {
-                CloudBlockBlob blob = blobList as CloudBlockBlob;
+                await cbb.FetchAttributesAsync();
+                itemizedBlobs.Add(cbb);
 
-                Trace.Assert(blob != null, "Must be a cloud block blob.");
-                Trace.Assert(false == blob.Name.Contains("$"), "No logging folder.");
-
-                ServiceEventSource.Current.Message("BackupStore: GetAnyBackupBlob returns {0}", blob.Name);
-
-                return blob;
             }
 
-            Trace.Assert(false, "There should always be something to restore.");
-
-            return null;
+            if (sorted)
+            {
+                return itemizedBlobs.OrderByDescending(x => x.Properties.LastModified);
+            }
+            else
+            {
+                return itemizedBlobs;
+            }
         }
     }
 }

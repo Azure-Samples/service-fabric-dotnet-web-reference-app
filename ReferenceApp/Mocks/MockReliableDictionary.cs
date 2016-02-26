@@ -5,15 +5,14 @@
 
 namespace Mocks
 {
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Data.Collections;
+    using Microsoft.ServiceFabric.Data.Notifications;
     using System;
-    using System.Linq;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Data.Collections;
-    using Microsoft.ServiceFabric.Data.Notifications;
 
     public class MockReliableDictionary<TKey, TValue> : IReliableDictionary<TKey, TValue>
         where TKey : System.IComparable<TKey>, System.IEquatable<TKey>

@@ -5,19 +5,14 @@
 
 namespace Inventory.Service
 {
+    using Microsoft.ServiceFabric.Data;
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Fabric;
+    using System.Fabric.Description;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.WindowsAzure.Storage.Auth;
-    using Microsoft.WindowsAzure.Storage.Blob;
-    using System.Fabric.Description;
-    using Microsoft.ServiceFabric.Data;
 
     public class DiskBackupManager : IBackupStore
     {
@@ -41,7 +36,7 @@ namespace Inventory.Service
             this.MaxBackupsToKeep = int.Parse(configSection.Parameters["MaxBackupsToKeep"].Value);
 
             this.PartitionArchiveFolder = Path.Combine(BackupArchivalPath, "Backups", partitionId);
-            this.PartitionTempDirectory = Path.Combine(codePackageTempDirectory, partitionId);            
+            this.PartitionTempDirectory = Path.Combine(codePackageTempDirectory, partitionId);
 
             ServiceEventSource.Current.Message(
                 "DiskBackupManager constructed IntervalinSec:{0}, archivePath:{1}, tempPath:{2}, backupsToKeep:{3}",
@@ -64,7 +59,7 @@ namespace Inventory.Service
             ServiceEventSource.Current.Message("latest zip backup is {0}", zipPath);
 
             DirectoryInfo directoryInfo = new DirectoryInfo(this.PartitionTempDirectory);
-            if(directoryInfo.Exists)
+            if (directoryInfo.Exists)
             {
                 directoryInfo.Delete(true);
             }
@@ -103,8 +98,8 @@ namespace Inventory.Service
 
             return;
         }
-        
-        public Task<string> ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
+
+        public Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
         {
             string fullArchiveDirectory = Path.Combine(this.PartitionArchiveFolder, Guid.NewGuid().ToString("N"));
 
@@ -118,7 +113,7 @@ namespace Inventory.Service
             DirectoryInfo backupDirectory = new DirectoryInfo(backupInfo.Directory);
             backupDirectory.Delete(true);
 
-            return Task.FromResult<string>(fullArchivePath);
+            return Task.FromResult(true);
         }
     }
 }

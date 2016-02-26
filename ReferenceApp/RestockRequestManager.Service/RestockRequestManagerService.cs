@@ -5,10 +5,6 @@
 
 namespace RestockRequestManager.Service
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Common;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
@@ -20,6 +16,10 @@ namespace RestockRequestManager.Service
     using Microsoft.ServiceFabric.Services.Runtime;
     using RestockRequest.Domain;
     using RestockRequestManager.Domain;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     internal class RestockRequestManagerService : StatefulService, IRestockRequestManager, IRestockRequestEvents
     {

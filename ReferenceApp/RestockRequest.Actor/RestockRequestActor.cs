@@ -5,11 +5,11 @@
 
 namespace RestockRequest.Actor
 {
+    using Microsoft.ServiceFabric.Actors;
+    using RestockRequest.Domain;
     using System;
     using System.Fabric;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors;
-    using RestockRequest.Domain;
 
     internal class RestockRequestActor : StatefulActor<RestockRequestActorState>, IRestockRequestActor, IRemindable
     {

@@ -5,9 +5,9 @@
 
 namespace Mocks
 {
+    using Microsoft.ServiceFabric.Data;
     using System;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Data;
 
     public class MockTransaction : ITransaction
     {

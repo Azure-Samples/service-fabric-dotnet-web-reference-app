@@ -5,16 +5,6 @@
 
 namespace Inventory.Service
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Configuration;
-    using System.Fabric;
-    using System.Fabric.Testability;
-    using System.IO;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Common;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Data;
@@ -23,9 +13,15 @@ namespace Inventory.Service
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
-    using Microsoft.WindowsAzure.Storage.Auth;
     using RestockRequest.Domain;
     using RestockRequestManager.Domain;
+    using System;
+    using System.Collections.Generic;
+    using System.Fabric;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     internal class InventoryService : StatefulService, IInventoryService
     {
@@ -49,35 +45,40 @@ namespace Inventory.Service
         public InventoryService(IReliableStateManager stateManager, StatefulServiceParameters parameters)
         {
             this.stateManager = stateManager;
-            CodePackageActivationContext context = parameters.CodePackageActivationContext;
-            var configPackage = context.GetConfigurationPackageObject("Config");
-            var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
             var partitionId = parameters.PartitionId.ToString("N");
-            string backupSettingValue = configSection.Parameters["BackupMode"].Value;
 
-            if (string.Equals(backupSettingValue, "none", StringComparison.InvariantCultureIgnoreCase))
+            if (parameters.CodePackageActivationContext != null)
             {
-                this.backupStorageType = BackupManagerType.None;
-            }
-            else if (string.Equals(backupSettingValue, "azure", StringComparison.InvariantCultureIgnoreCase))
-            {
-                this.backupStorageType = BackupManagerType.Azure;
+                CodePackageActivationContext context = parameters.CodePackageActivationContext;
+                var configPackage = context.GetConfigurationPackageObject("Config");
+                var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
 
-                var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
+                string backupSettingValue = configSection.Parameters["BackupMode"].Value;
 
-                //this.backupManager = new AzureBlobBackupManager(context, azureBackupConfigSection, partitionId);
-            }
-            else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
-            {
-                this.backupStorageType = BackupManagerType.Local;
+                if (string.Equals(backupSettingValue, "none", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    this.backupStorageType = BackupManagerType.None;
+                }
+                else if (string.Equals(backupSettingValue, "azure", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    this.backupStorageType = BackupManagerType.Azure;
 
-                var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
+                    var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
 
-                this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, context.TempDirectory);
-            }
-            else
-            {
-                throw new ArgumentException("Unknown backup type");
+                    //this.backupManager = new AzureBlobBackupManager(context, azureBackupConfigSection, partitionId);
+                }
+                else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    this.backupStorageType = BackupManagerType.Local;
+
+                    var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
+
+                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, context.TempDirectory);
+                }
+                else
+                {
+                    throw new ArgumentException("Unknown backup type");
+                }
             }
 
         }
@@ -319,7 +320,6 @@ namespace Inventory.Service
         {
             if (this.stateManager == null)
             {
-                //this.stateManager = base.CreateReliableStateManager();
                 this.stateManager = new ReliableStateManager(
                     new ReliableStateManagerConfiguration(
                         onDataLossEvent: this.RestoreFromBackupOnDataLossAsync));
@@ -328,7 +328,7 @@ namespace Inventory.Service
         }
 
         /// <summary>
-        /// Creates a new communication listener for protocol of our choice.
+        /// Creates a new communication listener
         /// </summary>
         /// <returns></returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
@@ -341,6 +341,12 @@ namespace Inventory.Service
             };
         }
 
+
+        //Dataloss testing can be triggered via powershell. To do so, run the following commands as a script
+        //Connect-ServiceFabricCluster
+        //$s = "fabric:/WebReferenceApplication/InventoryService"
+        //$p = Get-ServiceFabricApplication | Get-ServiceFabricService -ServiceName $s | Get-ServiceFabricPartition | Select -First 1
+        //$p | Invoke-ServiceFabricPartitionDataLoss -DataLossMode FullDataLoss -ServiceName $s
 
         protected async Task<bool> RestoreFromBackupOnDataLossAsync(CancellationToken cancellationToken)
         {
@@ -368,6 +374,9 @@ namespace Inventory.Service
 
                 ServiceEventSource.Current.ServiceMessage(this, "Restore completed");
 
+                DirectoryInfo tempRestoreDirectory = new DirectoryInfo(backupFolder);
+                tempRestoreDirectory.Delete(true);
+
                 return true;
             }
             catch (Exception e)
@@ -384,13 +393,13 @@ namespace Inventory.Service
             try
             {
 
-            this.runasToken = cancellationToken;
-            ServiceEventSource.Current.ServiceMessage(this, "inside RunAsync for Inventory Service");
+                this.runasToken = cancellationToken;
+                ServiceEventSource.Current.ServiceMessage(this, "inside RunAsync for Inventory Service");
 
-            return Task.WhenAll(
-                this.PeriodicInventoryCheck(cancellationToken),
-                this.PeriodicOldMessageTrimming(cancellationToken),
-                this.TakeBackupAsync(cancellationToken));
+                return Task.WhenAll(
+                    this.PeriodicInventoryCheck(cancellationToken),
+                    this.PeriodicOldMessageTrimming(cancellationToken),
+                    this.TakeBackupAsync(cancellationToken));
             }
             catch (Exception e)
             {
@@ -410,7 +419,7 @@ namespace Inventory.Service
             {
                 var value = await backupCountDictionary.TryGetValueAsync(tx, "backupCount");
 
-                if(!value.HasValue)
+                if (!value.HasValue)
                 {
                     totalBackupCount = 0;
                 }
@@ -429,7 +438,7 @@ namespace Inventory.Service
             try
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Archiving backup");
-                var backupId = await this.backupManager.ArchiveBackupAsync(backupInfo, this.runasToken);
+                await this.backupManager.ArchiveBackupAsync(backupInfo, this.runasToken);
                 ServiceEventSource.Current.ServiceMessage(this, "Backup archived");
             }
             catch (Exception e)

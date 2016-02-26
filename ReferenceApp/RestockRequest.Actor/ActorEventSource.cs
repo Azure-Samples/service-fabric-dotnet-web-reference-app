@@ -5,10 +5,10 @@
 
 namespace RestockRequest.Actor
 {
+    using Microsoft.ServiceFabric.Actors;
     using System;
     using System.Diagnostics.Tracing;
     using System.Fabric;
-    using Microsoft.ServiceFabric.Actors;
 
     [EventSource(Name = "MyCompany-Web_UIApplication-RestockRequestActor")]
     internal sealed class ActorEventSource : EventSource

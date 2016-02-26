@@ -11,31 +11,16 @@ namespace Inventory.Service
 
     public interface IBackupStore
     {
-        //Task InitializeBackupStoreAsync(CancellationToken cancellationToken);
-
-        //Task<bool> CheckIfBackupExistsInShareAsync(CancellationToken cancellationToken);
-
-        //Task UploadBackupFolderAsync(string backupFolder, string backupId, CancellationToken cancellationToken);
-
-        //Task<string> DownloadAnyBackupAsync(CancellationToken cancellationToken);
-
-        //Task DeleteLastDownloadedBackupAsync(CancellationToken cancellationToken);
-
-        //Task DeleteStoreAsync(CancellationToken cancellationToken);
-
-        //Task DeleteBackupsAzureAsync(CancellationToken cancellationToken);
         long backupFrequencyInSeconds
         {
             get;
         }
 
-        Task<string> ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken);
+        Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken);
 
         Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken);
 
         Task DeleteBackupsAsync(CancellationToken cancellationToken);
-
-
 
     }
 }

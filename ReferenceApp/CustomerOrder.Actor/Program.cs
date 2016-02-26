@@ -5,10 +5,10 @@
 
 namespace CustomerOrder.Actor
 {
+    using Microsoft.ServiceFabric.Actors;
     using System;
     using System.Fabric;
     using System.Threading;
-    using Microsoft.ServiceFabric.Actors;
 
     public class Program
     {

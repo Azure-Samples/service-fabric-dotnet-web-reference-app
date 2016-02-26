@@ -5,8 +5,8 @@
 
 namespace RestockRequest.Domain
 {
-    using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Actors;
+    using System.Threading.Tasks;
 
     public interface IRestockRequestActor : IActor, IActorEventPublisher<IRestockRequestEvents>
     {

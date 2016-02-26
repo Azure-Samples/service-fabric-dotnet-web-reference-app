@@ -5,14 +5,14 @@
 
 namespace Web.Service
 {
+    using Microsoft.Owin.Hosting;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
     using System;
     using System.Fabric;
     using System.Fabric.Description;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Owin.Hosting;
-    using Microsoft.ServiceFabric.Services.Communication.Runtime;
 
     public class OwinCommunicationListener : ICommunicationListener
     {
