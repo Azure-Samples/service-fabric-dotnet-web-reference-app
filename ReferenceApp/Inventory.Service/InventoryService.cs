@@ -65,7 +65,7 @@ namespace Inventory.Service
 
                     var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
 
-                    //this.backupManager = new AzureBlobBackupManager(context, azureBackupConfigSection, partitionId);
+                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, context.TempDirectory);
                 }
                 else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
                 {

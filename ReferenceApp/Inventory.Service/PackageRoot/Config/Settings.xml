@@ -5,13 +5,13 @@
     <Parameter Name="ReplicatorEndpoint" Value="ReplicatorEndpoint" />
   </Section>
   <Section Name="Inventory.Service.Settings">
-    <Parameter Name="BackupMode" Value="local" />
+    <Parameter Name="BackupMode" Value="none" />
   </Section>
   <Section Name="Inventory.Service.BackupSettings.Azure">
-    <Parameter Name="BackupAccountName" Value="TBD=" />
-    <Parameter Name="PrimaryKeyForBackupTestAccount" Value="TBD=" />
-    <Parameter Name="BlobServiceEndpointAddress" Value="https://TBD.net/" />
-    <Parameter Name="BackupFrequencyInSeconds" Value="10" />
+    <Parameter Name="BackupAccountName" Value="" />
+    <Parameter Name="PrimaryKeyForBackupTestAccount" Value="" />
+    <Parameter Name="BlobServiceEndpointAddress" Value="" />
+    <Parameter Name="BackupFrequencyInSeconds" Value="30" />
     <Parameter Name="MaxBackupsToKeep" Value="5" />
   </Section>
   <Section Name="Inventory.Service.BackupSettings.Local">

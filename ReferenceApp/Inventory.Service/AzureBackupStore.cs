@@ -58,6 +58,10 @@ namespace Inventory.Service
             ServiceEventSource.Current.Message("AzureBlobBackupManager: Archive Called.");
 
             string fullArchiveDirectory = Path.Combine(this.PartitionTempDirectory, Guid.NewGuid().ToString("N"));
+
+            DirectoryInfo fullArchiveDirectoryInfo = new DirectoryInfo(fullArchiveDirectory);
+            fullArchiveDirectoryInfo.Create();
+
             string blobName = string.Format("{0}_{1}", Guid.NewGuid().ToString("N"), "Backup.zip");
             string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
 
@@ -93,17 +97,18 @@ namespace Inventory.Service
 
             ZipFile.ExtractToDirectory(zipPath, restorePath);
 
+            FileInfo zipInfo = new FileInfo(zipPath);
+            zipInfo.Delete();
+
             ServiceEventSource.Current.Message("AzureBlobBackupManager: Downloaded {0} in to {1}", lastBackupBlob.Name, restorePath);
 
             return restorePath;
-
         }
 
         public async Task DeleteBackupsAsync(CancellationToken cancellationToken)
         {
             if (this.backupBlobContainer.Exists())
             {
-
                 ServiceEventSource.Current.Message("AzureBlobBackupManager: Deleting old backups");
 
                 var oldBackups = (await GetBackupBlobs(true)).Skip(this.MaxBackupsToKeep);
