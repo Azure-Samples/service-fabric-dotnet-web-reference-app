@@ -5,16 +5,16 @@
 
 namespace CustomerOrder.UnitTests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Threading.Tasks;
     using CustomerOrder.Actor;
     using CustomerOrder.Domain;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
+    using System;
+    using System.Collections.Generic;
+    using System.Reflection;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class CustomerOrderActorTests

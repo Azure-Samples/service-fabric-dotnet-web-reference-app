@@ -5,23 +5,23 @@
 
 namespace RestockRequest.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using RestockRequest.Domain;
     using RestockRequestManager.Domain;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     internal class Program
     {
         private const int MaxNumberOfItems = 100000;
         private const int ParallelRequests = 100;
-        public static int GenerateDataIntervalInMsec = 30*1000;
+        public static int GenerateDataIntervalInMsec = 30 * 1000;
         private static Uri RestockRequestManagerServiceName = new Uri("fabric:/FabrikamReferenceApplication/RestockRequestManager");
-        private static Random random = new Random((int) DateTime.Now.Ticks);
+        private static Random random = new Random((int)DateTime.Now.Ticks);
         private static List<InventoryItemId> Items;
 
         private static void Main(string[] args)

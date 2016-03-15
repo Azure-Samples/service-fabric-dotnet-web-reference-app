@@ -5,10 +5,10 @@
 
 namespace Mocks
 {
-    using System;
-    using System.Collections.Generic;
     using Common.Wrappers;
     using Microsoft.ServiceFabric.Services.Remoting;
+    using System;
+    using System.Collections.Generic;
 
     public class MockServiceProxy : IServiceProxyWrapper
     {
@@ -16,17 +16,17 @@ namespace Mocks
 
         public TServiceInterface Create<TServiceInterface>(Uri serviceName) where TServiceInterface : IService
         {
-            return (TServiceInterface) this.createFunctions[typeof(TServiceInterface)](serviceName);
+            return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceName);
         }
 
         public TServiceInterface Create<TServiceInterface>(long partitionKey, Uri serviceName) where TServiceInterface : IService
         {
-            return (TServiceInterface) this.createFunctions[typeof(TServiceInterface)](serviceName);
+            return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceName);
         }
 
         public TServiceInterface Create<TServiceInterface>(string partitionKey, Uri serviceName) where TServiceInterface : IService
         {
-            return (TServiceInterface) this.createFunctions[typeof(TServiceInterface)](serviceName);
+            return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceName);
         }
 
         public void Supports<TServiceInterface>(Func<Uri, object> Create)

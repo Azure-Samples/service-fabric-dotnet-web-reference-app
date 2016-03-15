@@ -5,9 +5,9 @@
 
 namespace CustomerOrder.Domain
 {
+    using Microsoft.ServiceFabric.Actors;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Microsoft.ServiceFabric.Actors;
 
     public interface ICustomerOrderActor : IActor
     {

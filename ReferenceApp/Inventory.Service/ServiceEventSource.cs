@@ -5,10 +5,10 @@
 
 namespace Inventory.Service
 {
+    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
     using System.Diagnostics.Tracing;
     using System.Fabric;
-    using Microsoft.ServiceFabric.Services.Runtime;
 
     [EventSource(Name = "MyCompany-Web_UIApplication-InventoryService")]
     internal sealed class ServiceEventSource : EventSource

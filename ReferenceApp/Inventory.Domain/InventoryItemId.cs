@@ -5,14 +5,15 @@
 
 namespace Inventory.Domain
 {
+    using Microsoft.ServiceFabric.Actors;
     using System;
     using System.Runtime.Serialization;
-    using Microsoft.ServiceFabric.Actors;
 
     [DataContract]
     public class InventoryItemId : IFormattable, IComparable, IComparable<InventoryItemId>, IEquatable<InventoryItemId>
     {
-        [DataMember] private Guid id;
+        [DataMember]
+        private Guid id;
 
         public InventoryItemId()
         {
@@ -21,7 +22,7 @@ namespace Inventory.Domain
 
         public int CompareTo(object obj)
         {
-            return this.id.CompareTo(((InventoryItemId) obj).id);
+            return this.id.CompareTo(((InventoryItemId)obj).id);
         }
 
         public int CompareTo(InventoryItemId other)
@@ -41,7 +42,7 @@ namespace Inventory.Domain
 
         public long GetPartitionKey()
         {
-            return (long) CRC64.ToCRC64(this.id.ToByteArray());
+            return (long)CRC64.ToCRC64(this.id.ToByteArray());
         }
 
         public static bool operator ==(InventoryItemId item1, InventoryItemId item2)
@@ -56,7 +57,7 @@ namespace Inventory.Domain
 
         public override bool Equals(object obj)
         {
-            return (obj is InventoryItemId) ? this.id.Equals(((InventoryItemId) obj).id) : false;
+            return (obj is InventoryItemId) ? this.id.Equals(((InventoryItemId)obj).id) : false;
         }
 
         public override int GetHashCode()

@@ -5,11 +5,11 @@
 
 namespace Mocks
 {
+    using Common;
+    using Inventory.Domain;
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Common;
-    using Inventory.Domain;
 
     public class MockInventoryService : IInventoryService
     {
@@ -18,7 +18,7 @@ namespace Mocks
             this.AddStockAsyncFunc = (itemId, quantity) => Task.FromResult(quantity);
             this.RemoveStockAsyncFunc = (itemId, quantity, amId) => Task.FromResult(quantity);
             this.IsItemInInventoryAsyncFunc = (itemId) => Task.FromResult(true);
-            this.GetCustomerInventoryAsyncFunc = () => Task.FromResult<IEnumerable<InventoryItemView>>(new List<InventoryItemView>() {new InventoryItemView()});
+            this.GetCustomerInventoryAsyncFunc = () => Task.FromResult<IEnumerable<InventoryItemView>>(new List<InventoryItemView>() { new InventoryItemView() });
             this.CreateInventoryItemAsyncFunc = item => Task.FromResult(true);
         }
 

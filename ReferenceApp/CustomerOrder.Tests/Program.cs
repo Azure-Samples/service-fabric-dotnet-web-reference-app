@@ -5,14 +5,14 @@
 
 namespace CustomerOrder.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
     using CustomerOrder.Domain;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     internal class Program
     {
@@ -115,7 +115,7 @@ namespace CustomerOrder.Tests
             List<CustomerOrderItem> order = new List<CustomerOrderItem>();
             foreach (InventoryItemView item in store)
             {
-                int quantityToAdd = item.CustomerAvailableStock/10;
+                int quantityToAdd = item.CustomerAvailableStock / 10;
                 Console.WriteLine(string.Format("We are adding {0} items of item no {1} to customer's order", quantityToAdd.ToString(), item.Id.ToString()));
 
                 CustomerOrderItem toAdd = new CustomerOrderItem(item.Id, quantityToAdd);

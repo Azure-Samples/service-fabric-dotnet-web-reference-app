@@ -5,15 +5,15 @@
 
 namespace CustomerOrder.Actor
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Common;
     using Common.Wrappers;
     using CustomerOrder.Domain;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
 
     internal class CustomerOrderActor : StatefulActor<CustomerOrderActorState>, ICustomerOrderActor, IRemindable
     {

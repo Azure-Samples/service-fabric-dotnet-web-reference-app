@@ -5,15 +5,12 @@
 
 namespace Web.Service.Controllers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using System.Web.Http;
     using Common;
-    using CustomerOrder.Domain;
-    using Microsoft.ServiceFabric.Services;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using System;
+    using System.Threading.Tasks;
+    using System.Web.Http;
     public class InventoryController : ApiController
     {
         private const string InventoryServiceName = "InventoryService";
@@ -37,7 +34,7 @@ namespace Web.Service.Controllers
 
             ServiceUriBuilder builder = new ServiceUriBuilder(InventoryServiceName);
             IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(i.Id.GetPartitionKey(), builder.ToUri());
-            
+
             try
             {
                 return inventoryServiceClient.CreateInventoryItemAsync(i);

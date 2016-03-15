@@ -2,6 +2,7 @@
 <Settings xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.microsoft.com/2011/01/fabric">
    <Section Name="CustomerOrderActorServiceReplicatorConfig">
       <Parameter Name="ReplicatorEndpoint" Value="CustomerOrderActorServiceReplicatorEndpoint" />
+      <Parameter Name="BatchAcknowledgementInterval" Value="0.005" />
    </Section>
    <Section Name="CustomerOrderActorServiceReplicatorSecurityConfig">
       <Parameter Name="CredentialType" Value="None" />

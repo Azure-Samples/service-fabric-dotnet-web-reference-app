@@ -5,10 +5,10 @@
 
 namespace Inventory.Domain
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
     using Common;
     using Microsoft.ServiceFabric.Services.Remoting;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     public interface IInventoryService : IService
     {
