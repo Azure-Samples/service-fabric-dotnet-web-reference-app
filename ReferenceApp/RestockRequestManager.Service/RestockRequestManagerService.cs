@@ -8,6 +8,7 @@ namespace RestockRequestManager.Service
     using Common;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Client;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
@@ -18,6 +19,7 @@ namespace RestockRequestManager.Service
     using RestockRequestManager.Domain;
     using System;
     using System.Collections.Generic;
+    using System.Fabric;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -30,9 +32,17 @@ namespace RestockRequestManager.Service
         private static TimeSpan CompletedRequestsBatchInterval = TimeSpan.FromSeconds(1);
         private static TimeSpan TxTimeout = TimeSpan.FromSeconds(4);
 
+        public RestockRequestManagerService(StatefulServiceContext serviceContext) : base(serviceContext)
+        {
+        }
+
+        public RestockRequestManagerService(StatefulServiceContext serviceContext, IReliableStateManagerReplica reliableStateManagerReplica) : base(serviceContext, reliableStateManagerReplica)
+        {
+        }
+
         public string ApplicationName
         {
-            get { return this.ServiceInitializationParameters.CodePackageActivationContext.ApplicationName; }
+            get { return this.Context.CodePackageActivationContext.ApplicationName; }
         }
 
         /// <summary>
@@ -69,7 +79,7 @@ namespace RestockRequestManager.Service
                 IReliableDictionary<InventoryItemId, ActorId> requestDictionary =
                     await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, ActorId>>(ItemIdToActorIdMapName);
 
-                ActorId actorId = ActorId.NewId();
+                ActorId actorId = ActorId.CreateRandom();
 
                 try
                 {
@@ -107,13 +117,12 @@ namespace RestockRequestManager.Service
             }
         }
 
+
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new List<ServiceReplicaListener>()
+            return new[]
             {
-                new ServiceReplicaListener(
-                    (initParams) =>
-                        new ServiceRemotingListener<IRestockRequestManager>(initParams, this))
+                new ServiceReplicaListener(context => this.CreateServiceRemotingListener(context))
             };
         }
 
@@ -130,12 +139,12 @@ namespace RestockRequestManager.Service
             {
                 using (ITransaction tx = this.StateManager.CreateTransaction())
                 {
-                    ConditionalResult<RestockRequest> result = await completedRequests.TryDequeueAsync(tx, TxTimeout, cancellationToken);
+                    ConditionalValue<RestockRequest> result = await completedRequests.TryDequeueAsync(tx, TxTimeout, cancellationToken);
 
                     if (result.HasValue)
                     {
                         ServiceUriBuilder builder = new ServiceUriBuilder(InventoryServiceName);
-                        IInventoryService inventoryService = ServiceProxy.Create<IInventoryService>(result.Value.ItemId.GetPartitionKey(), builder.ToUri());
+                        IInventoryService inventoryService = ServiceProxy.Create<IInventoryService>(builder.ToUri(), result.Value.ItemId.GetPartitionKey());
 
                         await inventoryService.AddStockAsync(result.Value.ItemId, result.Value.Quantity);
 

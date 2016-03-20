@@ -7,6 +7,7 @@ namespace CustomerOrder.Domain
 {
     public enum CustomerOrderStatus
     {
+        Unknown,
         New,
         Submitted,
         InProcess,

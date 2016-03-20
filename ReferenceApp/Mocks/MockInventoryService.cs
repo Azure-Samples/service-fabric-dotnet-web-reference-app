@@ -9,6 +9,7 @@ namespace Mocks
     using Inventory.Domain;
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
 
     public class MockInventoryService : IInventoryService
@@ -47,9 +48,19 @@ namespace Mocks
             return this.GetCustomerInventoryAsyncFunc();
         }
 
+        public Task<IEnumerable<InventoryItemView>> GetCustomerInventoryAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<bool> IsItemInInventoryAsync(InventoryItemId itemId)
         {
             return this.IsItemInInventoryAsyncFunc(itemId);
+        }
+
+        public Task<bool> IsItemInInventoryAsync(InventoryItemId itemId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<int> RemoveStockAsync(InventoryItemId itemId, int quantity, CustomerOrderActorMessageId amId)

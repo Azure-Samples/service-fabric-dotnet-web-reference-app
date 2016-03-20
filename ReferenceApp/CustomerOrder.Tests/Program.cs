@@ -8,10 +8,12 @@ namespace CustomerOrder.Tests
     using CustomerOrder.Domain;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Client;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
 
     internal class Program
@@ -52,7 +54,7 @@ namespace CustomerOrder.Tests
         public static async Task GetOrderStatus(Guid customerOrderId)
         {
             ICustomerOrderActor customerOrder = ActorProxy.Create<ICustomerOrderActor>(new ActorId(customerOrderId), applicationName);
-            string status = await customerOrder.GetStatusAsync();
+            string status = await customerOrder.GetOrderStatusAsStringAsync();
             Console.WriteLine("Order status is: " + status);
             return;
         }
@@ -79,8 +81,8 @@ namespace CustomerOrder.Tests
             //Tests both of these functionalities at once. 
 
 
-            IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(0, InventoryServiceName);
-            IEnumerable<InventoryItemView> storeview = await inventoryServiceClient.GetCustomerInventoryAsync();
+            IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(InventoryServiceName);
+            IEnumerable<InventoryItemView> storeview = await inventoryServiceClient.GetCustomerInventoryAsync(CancellationToken.None);
             Console.WriteLine("We are printing the storeview from the GetCustomerInventory call through the InventoryService proxy");
             foreach (InventoryItemView view in storeview)
             {
@@ -102,10 +104,10 @@ namespace CustomerOrder.Tests
 
             await GetOrderStatus(x);
             Console.WriteLine("RunAsync: Sleeping for 10 seconds while Order Status is updated.");
-            System.Threading.Thread.Sleep(10000);
+            await Task.Delay(TimeSpan.FromSeconds(10));
             await GetOrderStatus(x);
             Console.WriteLine("RunAsync: Sleeping for 10 seconds while Order Status is updated.");
-            System.Threading.Thread.Sleep(10000);
+            await Task.Delay(TimeSpan.FromSeconds(10));
             await GetOrderStatus(x);
         }
 

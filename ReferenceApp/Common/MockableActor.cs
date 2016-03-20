@@ -5,16 +5,16 @@
 
 namespace Common
 {
-    using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using System;
     using System.Threading.Tasks;
 
-    public class MockableActor<T> : StatefulActor<T> where T : class
+    public class MockableActor : Actor
     {
         protected new Task<IActorReminder> RegisterReminderAsync(
-            string reminderName, byte[] state, TimeSpan dueTime, TimeSpan period, ActorReminderAttributes attribute)
+            string reminderName, byte[] state, TimeSpan dueTime, TimeSpan period)
         {
-            return base.RegisterReminderAsync(reminderName, state, dueTime, period, attribute);
+            return base.RegisterReminderAsync(reminderName, state, dueTime, period);
         }
 
         protected new Task UnregisterReminderAsync(IActorReminder reminder)
@@ -23,9 +23,9 @@ namespace Common
         }
 
         internal Task<IActorReminder> RegisterReminderAccessor(
-            string reminderName, byte[] state, TimeSpan dueTime, TimeSpan period, ActorReminderAttributes attribute)
+            string reminderName, byte[] state, TimeSpan dueTime, TimeSpan period)
         {
-            return base.RegisterReminderAsync(reminderName, state, dueTime, period, attribute);
+            return base.RegisterReminderAsync(reminderName, state, dueTime, period);
         }
 
         internal Task UnregisterReminderAccessor(IActorReminder reminder)

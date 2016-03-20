@@ -26,7 +26,7 @@ namespace Web.Service
             fileOptions.DefaultFilesOptions.DefaultFileNames = new[] { "index.html" };
             fileOptions.StaticFileOptions.FileSystem = fileOptions.FileSystem = physicalFileSystem;
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
-
+            fileOptions.EnableDirectoryBrowsing = true;
 
             FormatterConfig.ConfigureFormatters(config.Formatters);
             config.MapHttpAttributeRoutes();

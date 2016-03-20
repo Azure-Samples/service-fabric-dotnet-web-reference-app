@@ -27,19 +27,19 @@
       <ConfigOverrides />
    </ServiceManifestImport>
    <DefaultServices>
-      <Service Name="RestockRequestActorService" GeneratedIdRef="37361b17-b463-47cf-a56e-f2ab95d7e003">
+      <Service Name="RestockRequestActorService" GeneratedIdRef="cd8c75cc-03eb-4aec-ab00-dd3cc5048d9d|None">
          <StatefulService ServiceTypeName="RestockRequestActorServiceType" TargetReplicaSetSize="3" MinReplicaSetSize="2">
             <UniformInt64Partition PartitionCount="3" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
          </StatefulService>
       </Service>
-      <Service Name="CustomerOrderActorService" GeneratedIdRef="b9e98d2e-b3a9-4867-917a-351f449abcfe">
+      <Service Name="CustomerOrderActorService" GeneratedIdRef="36545b1e-9aa7-417b-a8aa-b7e28fd47353|None">
          <StatefulService ServiceTypeName="CustomerOrderActorServiceType" TargetReplicaSetSize="3" MinReplicaSetSize="2">
             <UniformInt64Partition PartitionCount="9" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
          </StatefulService>
       </Service>
       <Service Name="RestockRequestManager">
          <StatefulService ServiceTypeName="RestockRequestManagerServiceType" TargetReplicaSetSize="3" MinReplicaSetSize="2">
-            <UniformInt64Partition PartitionCount="1" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+            <SingletonPartition />
          </StatefulService>
       </Service>
       <Service Name="InventoryService">

@@ -9,6 +9,7 @@ namespace Inventory.Service
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
+    using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
@@ -19,7 +20,6 @@ namespace Inventory.Service
     using System.Collections.Generic;
     using System.Fabric;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -30,10 +30,10 @@ namespace Inventory.Service
         private const string RestockRequestManagerServiceName = "RestockRequestManager";
         private const string RequestHistoryDictionaryName = "RequestHistory";
         private const string BackupCountDictionaryName = "BackupCountingDictionary";
+        internal const string InventoryServiceType = "InventoryServiceType";
 
-        private IReliableStateManager stateManager;
+        //private IReliableStateManager stateManager;
         private IBackupStore backupManager;
-        private CancellationToken runasToken;
 
         //Set local or cloud backup, or none. Disabled is the default. Overridden by config.
         private BackupManagerType backupStorageType = BackupManagerType.None;
@@ -42,15 +42,20 @@ namespace Inventory.Service
         /// This constructor is used in unit tests to inject a different state manager for unit testing.
         /// </summary>
         /// <param name="stateManager"></param>
-        public InventoryService(IReliableStateManager stateManager, StatefulServiceParameters parameters)
-        {
-            this.stateManager = stateManager;
-            var partitionId = parameters.PartitionId.ToString("N");
 
-            if (parameters.CodePackageActivationContext != null)
+        public InventoryService(StatefulServiceContext serviceContext) : this(serviceContext, (new ReliableStateManager(serviceContext)))
+        {
+
+        }
+
+        public InventoryService(StatefulServiceContext context, IReliableStateManagerReplica stateManagerReplica) : base(context, stateManagerReplica)
+        {
+            var partitionId = context.PartitionId.ToString("N");
+
+            if (context.CodePackageActivationContext != null)
             {
-                CodePackageActivationContext context = parameters.CodePackageActivationContext;
-                var configPackage = context.GetConfigurationPackageObject("Config");
+                ICodePackageActivationContext codePackageContext = context.CodePackageActivationContext;
+                var configPackage = codePackageContext.GetConfigurationPackageObject("Config");
                 var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
 
                 string backupSettingValue = configSection.Parameters["BackupMode"].Value;
@@ -65,7 +70,7 @@ namespace Inventory.Service
 
                     var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
 
-                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, context.TempDirectory);
+                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, codePackageContext.TempDirectory);
                 }
                 else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -73,14 +78,13 @@ namespace Inventory.Service
 
                     var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
 
-                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, context.TempDirectory);
+                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, codePackageContext.TempDirectory);
                 }
                 else
                 {
                     throw new ArgumentException("Unknown backup type");
                 }
             }
-
         }
 
         /// <summary>
@@ -91,9 +95,9 @@ namespace Inventory.Service
         public async Task<bool> CreateInventoryItemAsync(InventoryItem item)
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 await inventoryItems.AddAsync(tx, item.Id, item);
                 await tx.CommitAsync();
@@ -112,16 +116,16 @@ namespace Inventory.Service
         public async Task<int> AddStockAsync(InventoryItemId itemId, int quantity)
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
             int quantityAdded = 0;
 
             ServiceEventSource.Current.ServiceMessage(this, "Received add stock request. Item: {0}. Quantity: {1}.", itemId, quantity);
 
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 // Try to get the InventoryItem for the ID in the request.
-                ConditionalResult<InventoryItem> item = await inventoryItems.TryGetValueAsync(tx, itemId);
+                ConditionalValue<InventoryItem> item = await inventoryItems.TryGetValueAsync(tx, itemId);
 
                 // We can only update the stock for InventoryItems in the system - we are not adding new items here.
                 if (item.HasValue)
@@ -161,28 +165,28 @@ namespace Inventory.Service
             ServiceEventSource.Current.ServiceMessage(this, "inside remove stock {0}|{1}", amId.GetHashCode(), amId.GetHashCode());
 
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
             IReliableDictionary<CustomerOrderActorMessageId, DateTime> recentRequests =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, DateTime>>(ActorMessageDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, DateTime>>(ActorMessageDictionaryName);
 
             IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>> requestHistory =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
 
             int removed = 0;
 
             ServiceEventSource.Current.ServiceMessage(this, "Received remove stock request. Item: {0}. Quantity: {1}.", itemId, quantity);
 
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 //first let's see if this is a duplicate request
-                ConditionalResult<DateTime> previousRequest = await recentRequests.TryGetValueAsync(tx, amId);
+                ConditionalValue<DateTime> previousRequest = await recentRequests.TryGetValueAsync(tx, amId);
                 if (!previousRequest.HasValue)
                 {
                     //first time we've seen the request or it was a dupe from so long ago we have forgotten
 
                     // Try to get the InventoryItem for the ID in the request.
-                    ConditionalResult<InventoryItem> item = await inventoryItems.TryGetValueAsync(tx, itemId);
+                    ConditionalValue<InventoryItem> item = await inventoryItems.TryGetValueAsync(tx, itemId);
 
                     // We can only remove stock for InventoryItems in the system.
                     if (item.HasValue)
@@ -212,7 +216,7 @@ namespace Inventory.Service
                 {
                     //this is a duplicate request. We need to send back the result we already came up with and hope they get it this time
                     //find the previous result and send it back
-                    ConditionalResult<Tuple<InventoryItemId, int>> previousResponse = await requestHistory.TryGetValueAsync(tx, amId);
+                    ConditionalValue<Tuple<InventoryItemId, int>> previousResponse = await requestHistory.TryGetValueAsync(tx, amId);
 
                     if (previousResponse.HasValue)
                     {
@@ -232,7 +236,7 @@ namespace Inventory.Service
                             this,
                             "Inconsistent State: recieved duplicate request {0} but don't have matching response in history",
                             amId);
-                        this.ServicePartition.ReportFault(System.Fabric.FaultType.Transient);
+                        this.Partition.ReportFault(System.Fabric.FaultType.Transient);
                     }
 
 
@@ -255,17 +259,17 @@ namespace Inventory.Service
             return removed;
         }
 
-        public async Task<bool> IsItemInInventoryAsync(InventoryItemId itemId)
+        public async Task<bool> IsItemInInventoryAsync(InventoryItemId itemId, CancellationToken ct)
         {
             ServiceEventSource.Current.Message("checking item {0} to see if it is in inventory", itemId);
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
-            this.PrintInventoryItemsAsync(inventoryItems);
+            await this.PrintInventoryItemsAsync(inventoryItems, ct);
 
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                ConditionalResult<InventoryItem> item = await inventoryItems.TryGetValueAsync(tx, itemId);
+                ConditionalValue<InventoryItem> item = await inventoryItems.TryGetValueAsync(tx, itemId);
                 return item.HasValue;
             }
         }
@@ -276,24 +280,32 @@ namespace Inventory.Service
         /// zero are returned as a business logic constraint to reduce overordering. 
         /// </summary>
         /// <returns>IEnumerable of InventoryItemView</returns>
-        public async Task<IEnumerable<InventoryItemView>> GetCustomerInventoryAsync()
+        public async Task<IEnumerable<InventoryItemView>> GetCustomerInventoryAsync(CancellationToken ct)
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
             ServiceEventSource.Current.Message("Called GetCustomerInventory to return InventoryItemView");
 
-            this.PrintInventoryItemsAsync(inventoryItems);
+            await this.PrintInventoryItemsAsync(inventoryItems, ct);
 
-            IEnumerable<InventoryItemView> results = null;
+            IList<InventoryItemView> results = new List<InventoryItemView>();
 
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                if ((await inventoryItems.GetCountAsync(tx)) > 0)
+                ServiceEventSource.Current.Message("Generating item views for {0} items", await inventoryItems.GetCountAsync(tx));
+
+                var enumerator = (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(ct))
                 {
-                    results = (await inventoryItems.CreateEnumerableAsync(tx)).Select(x => (InventoryItemView)x.Value).Where(x => x.CustomerAvailableStock > 0);
+                    if (enumerator.Current.Value.AvailableStock > 0)
+                    {
+                        results.Add(enumerator.Current.Value);
+                    }
                 }
             }
+
 
             return results;
         }
@@ -307,40 +319,25 @@ namespace Inventory.Service
         public async Task DeleteInventoryItemAsync(InventoryItemId itemId)
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 await inventoryItems.TryRemoveAsync(tx, itemId);
                 await tx.CommitAsync();
             }
         }
-
-        protected override IReliableStateManager CreateReliableStateManager()
-        {
-            if (this.stateManager == null)
-            {
-                this.stateManager = new ReliableStateManager(
-                    new ReliableStateManagerConfiguration(
-                        onDataLossEvent: this.RestoreFromBackupOnDataLossAsync));
-            }
-            return this.stateManager;
-        }
-
         /// <summary>
         /// Creates a new communication listener
         /// </summary>
         /// <returns></returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new List<ServiceReplicaListener>()
+            return new[]
             {
-                new ServiceReplicaListener(
-                    (initParams) =>
-                        new ServiceRemotingListener<IInventoryService>(initParams, this))
+                new ServiceReplicaListener(context => this.CreateServiceRemotingListener(context))
             };
         }
-
 
         //Dataloss testing can be triggered via powershell. To do so, run the following commands as a script
         //Connect-ServiceFabricCluster
@@ -348,7 +345,7 @@ namespace Inventory.Service
         //$p = Get-ServiceFabricApplication | Get-ServiceFabricService -ServiceName $s | Get-ServiceFabricPartition | Select -First 1
         //$p | Invoke-ServiceFabricPartitionDataLoss -DataLossMode FullDataLoss -ServiceName $s
 
-        protected async Task<bool> RestoreFromBackupOnDataLossAsync(CancellationToken cancellationToken)
+        protected override async Task<bool> OnDataLossAsync(RestoreContext restoreCtx, CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.ServiceMessage(this, "OnDataLoss Invoked!");
 
@@ -370,7 +367,9 @@ namespace Inventory.Service
 
                 ServiceEventSource.Current.ServiceMessage(this, "Restoration Folder Path " + backupFolder);
 
-                await this.StateManager.RestoreAsync(backupFolder, RestorePolicy.Force, cancellationToken);
+                RestoreDescription restoreRescription = new RestoreDescription(backupFolder, RestorePolicy.Force);
+
+                await restoreCtx.RestoreAsync(restoreRescription, cancellationToken);
 
                 ServiceEventSource.Current.ServiceMessage(this, "Restore completed");
 
@@ -392,14 +391,12 @@ namespace Inventory.Service
         {
             try
             {
-
-                this.runasToken = cancellationToken;
                 ServiceEventSource.Current.ServiceMessage(this, "inside RunAsync for Inventory Service");
 
                 return Task.WhenAll(
                     this.PeriodicInventoryCheck(cancellationToken),
                     this.PeriodicOldMessageTrimming(cancellationToken),
-                    this.TakeBackupAsync(cancellationToken));
+                    this.PeriodicTakeBackupAsync(cancellationToken));
             }
             catch (Exception e)
             {
@@ -409,9 +406,9 @@ namespace Inventory.Service
         }
 
 
-        private async Task<bool> BackupCallbackAsync(BackupInfo backupInfo)
+        private async Task<bool> BackupCallbackAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
         {
-            ServiceEventSource.Current.ServiceMessage(this, "Inside backup callback for replica {0}|{1}", this.ServiceInitializationParameters.PartitionId, this.ServiceInitializationParameters.ReplicaId);
+            ServiceEventSource.Current.ServiceMessage(this, "Inside backup callback for replica {0}|{1}", this.Context.PartitionId, this.Context.ReplicaId);
             long totalBackupCount;
 
             IReliableDictionary<string, long> backupCountDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>(BackupCountDictionaryName);
@@ -438,7 +435,7 @@ namespace Inventory.Service
             try
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Archiving backup");
-                await this.backupManager.ArchiveBackupAsync(backupInfo, this.runasToken);
+                await this.backupManager.ArchiveBackupAsync(backupInfo, cancellationToken);
                 ServiceEventSource.Current.ServiceMessage(this, "Backup archived");
             }
             catch (Exception e)
@@ -446,51 +443,51 @@ namespace Inventory.Service
                 ServiceEventSource.Current.ServiceMessage(this, "Archive of backup failed: Source: {0} Exception: {1}", backupInfo.Directory, e.Message);
             }
 
-            await this.backupManager.DeleteBackupsAsync(this.runasToken);
+            await this.backupManager.DeleteBackupsAsync(cancellationToken);
 
             ServiceEventSource.Current.Message("Backups deleted");
 
             return true;
         }
 
-        private async void PrintInventoryItemsAsync(IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems)
+        private async Task PrintInventoryItemsAsync(IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems, CancellationToken cancellationToken)
         {
-            ServiceEventSource.Current.Message("PRINTING INVENTORY");
-
-            Dictionary<KeyValuePair<InventoryItemId, InventoryItem>, KeyValuePair<InventoryItemId, InventoryItem>> items;
-
-            using (ITransaction tx = this.stateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                items = (await inventoryItems.CreateEnumerableAsync(tx)).ToDictionary(v => v);
-            }
+                ServiceEventSource.Current.Message("Printing Inventory for {0} items:", await inventoryItems.GetCountAsync(tx));
 
-            foreach (KeyValuePair<KeyValuePair<InventoryItemId, InventoryItem>, KeyValuePair<InventoryItemId, InventoryItem>> tempitem in items)
-            {
-                ServiceEventSource.Current.Message("ID:{0}|Item:{1}", tempitem.Key, tempitem.Value);
+                var enumerator = (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync(cancellationToken))
+                {
+                    ServiceEventSource.Current.Message("ID:{0}|Item:{1}", enumerator.Current.Key, enumerator.Current.Value);
+                }
             }
         }
 
         private async Task PeriodicOldMessageTrimming(CancellationToken cancellationToken)
         {
             IReliableDictionary<CustomerOrderActorMessageId, DateTime> recentRequests =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, DateTime>>(ActorMessageDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, DateTime>>(ActorMessageDictionaryName);
 
             IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>> requestHistory =
                 await
-                    this.stateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
+                    this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                using (ITransaction tx = this.stateManager.CreateTransaction())
+                using (ITransaction tx = this.StateManager.CreateTransaction())
                 {
-                    foreach (KeyValuePair<CustomerOrderActorMessageId, DateTime> request in (await recentRequests.CreateEnumerableAsync(tx)))
+                    var enumerator = (await recentRequests.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+
+                    while (await enumerator.MoveNextAsync(cancellationToken))
                     {
                         //if we have a record of a message that is older than 2 hours from current time, then remove that record
                         //from both of the stale message tracking dictionaries.
-                        if (request.Value < (DateTime.UtcNow.AddHours(-2)))
+                        if (enumerator.Current.Value < (DateTime.UtcNow.AddHours(-2)))
                         {
-                            await recentRequests.TryRemoveAsync(tx, request.Key);
-                            await requestHistory.TryRemoveAsync(tx, request.Key);
+                            await recentRequests.TryRemoveAsync(tx, enumerator.Current.Key);
+                            await requestHistory.TryRemoveAsync(tx, enumerator.Current.Key);
                         }
                     }
 
@@ -505,18 +502,30 @@ namespace Inventory.Service
         private async Task PeriodicInventoryCheck(CancellationToken cancellationToken)
         {
             IReliableDictionary<InventoryItemId, InventoryItem> inventoryItems =
-                await this.stateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<InventoryItemId, InventoryItem>>(InventoryItemDictionaryName);
 
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                IEnumerable<InventoryItem> items;
+                IList<InventoryItem> items = new List<InventoryItem>();
 
-                using (ITransaction tx = this.stateManager.CreateTransaction())
+                using (ITransaction tx = this.StateManager.CreateTransaction())
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Checking inventory stock for {0} items.", await inventoryItems.GetCountAsync(tx));
-                    items = (await inventoryItems.CreateEnumerableAsync(tx)).Select(x => x.Value);
+
+                    var enumerator = (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+
+                    while (await enumerator.MoveNextAsync(cancellationToken))
+                    {
+                        var item = enumerator.Current.Value;
+
+                        //Check if stock is below restockThreshold and if the item is not already on reorder
+                        if ((item.AvailableStock <= item.RestockThreshold) && !item.OnReorder)
+                        {
+                            items.Add(enumerator.Current.Value);
+                        }
+                    }
                 }
 
                 foreach (InventoryItem item in items)
@@ -525,46 +534,44 @@ namespace Inventory.Service
 
                     try
                     {
-                        //Check if stock is below restockThreshold and if the item is not already on reorder
-                        if ((item.AvailableStock <= item.RestockThreshold) && !item.OnReorder)
+
+                        ServiceUriBuilder builder = new ServiceUriBuilder(RestockRequestManagerServiceName);
+
+                        IRestockRequestManager restockRequestManagerClient = ServiceProxy.Create<IRestockRequestManager>(builder.ToUri(), new ServicePartitionKey());
+
+                        // we reduce the quantity passed in to RestockRequest to ensure we don't overorder   
+                        RestockRequest newRequest = new RestockRequest(item.Id, (item.MaxStockThreshold - item.AvailableStock));
+
+                        InventoryItem updatedItem = new InventoryItem(
+                            item.Description,
+                            item.Price,
+                            item.AvailableStock,
+                            item.RestockThreshold,
+                            item.MaxStockThreshold,
+                            item.Id,
+                            true);
+
+                        // TODO: this call needs to be idempotent in case we fail to update the InventoryItem after this completes.
+                        await restockRequestManagerClient.AddRestockRequestAsync(newRequest);
+
+                        // Write operations take an exclusive lock on an item, which means we can't do anything else with that item while the transaction is open.
+                        // If something blocks before the transaction is committed, the open transaction on the item will prevent all operations on it, including reads.
+                        // Once the transaction commits, the lock is released and other operations on the item can proceed.
+                        // Operations on the transaction all have timeouts to prevent deadlocking an item, 
+                        // but we should do as little work inside the transaction as possible that is not related to the transaction itself.
+                        using (ITransaction tx = this.StateManager.CreateTransaction())
                         {
-                            ServiceUriBuilder builder = new ServiceUriBuilder(RestockRequestManagerServiceName);
+                            await inventoryItems.TryUpdateAsync(tx, item.Id, updatedItem, item);
 
-                            IRestockRequestManager restockRequestManagerClient = ServiceProxy.Create<IRestockRequestManager>(0, builder.ToUri());
-
-                            // we reduce the quantity passed in to RestockRequest to ensure we don't overorder   
-                            RestockRequest newRequest = new RestockRequest(item.Id, (item.MaxStockThreshold - item.AvailableStock));
-
-                            InventoryItem updatedItem = new InventoryItem(
-                                item.Description,
-                                item.Price,
-                                item.AvailableStock,
-                                item.RestockThreshold,
-                                item.MaxStockThreshold,
-                                item.Id,
-                                true);
-
-                            // TODO: this call needs to be idempotent in case we fail to update the InventoryItem after this completes.
-                            await restockRequestManagerClient.AddRestockRequestAsync(newRequest);
-
-                            // Write operations take an exclusive lock on an item, which means we can't do anything else with that item while the transaction is open.
-                            // If something blocks before the transaction is committed, the open transaction on the item will prevent all operations on it, including reads.
-                            // Once the transaction commits, the lock is released and other operations on the item can proceed.
-                            // Operations on the transaction all have timeouts to prevent deadlocking an item, 
-                            // but we should do as little work inside the transaction as possible that is not related to the transaction itself.
-                            using (ITransaction tx = this.stateManager.CreateTransaction())
-                            {
-                                await inventoryItems.TryUpdateAsync(tx, item.Id, updatedItem, item);
-
-                                await tx.CommitAsync();
-                            }
-
-                            ServiceEventSource.Current.ServiceMessage(
-                                this,
-                                "Restock order placed. Item ID: {0}. Quantity: {1}",
-                                newRequest.ItemId,
-                                newRequest.Quantity);
+                            await tx.CommitAsync();
                         }
+
+                        ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Restock order placed. Item ID: {0}. Quantity: {1}",
+                            newRequest.ItemId,
+                            newRequest.Quantity);
+
                     }
                     catch (Exception e)
                     {
@@ -576,7 +583,7 @@ namespace Inventory.Service
             }
         }
 
-        private async Task TakeBackupAsync(CancellationToken cancellationToken)
+        private async Task PeriodicTakeBackupAsync(CancellationToken cancellationToken)
         {
             long backupsTaken = 0;
 
@@ -590,8 +597,14 @@ namespace Inventory.Service
                 else
                 {
                     await Task.Delay(TimeSpan.FromSeconds(this.backupManager.backupFrequencyInSeconds));
-                    await this.StateManager.BackupAsync(BackupOption.Full, TimeSpan.FromMinutes(60), cancellationToken, this.BackupCallbackAsync);
+
+
+                    BackupDescription backupDescription = new BackupDescription(BackupOption.Full, this.BackupCallbackAsync);
+
+                    await this.BackupAsync(backupDescription, TimeSpan.FromHours(1), cancellationToken);
+
                     backupsTaken++;
+
                     ServiceEventSource.Current.ServiceMessage(this, "Backup {0} taken", backupsTaken);
                 }
             }

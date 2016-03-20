@@ -54,7 +54,7 @@ namespace RestockRequest.Tests
         {
             // TODO: need to go to correct partition
             // For now, the inventory is not partitioned, so always go to first partition
-            IRestockRequestManager restockRequestService = ServiceProxy.Create<IRestockRequestManager>(0, RestockRequestManagerServiceName);
+            IRestockRequestManager restockRequestService = ServiceProxy.Create<IRestockRequestManager>(RestockRequestManagerServiceName);
 
             IList<Task> tasks = new List<Task>();
             for (int i = 0; i < ParallelRequests; i++)

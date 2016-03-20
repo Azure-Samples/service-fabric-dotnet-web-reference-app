@@ -5,7 +5,8 @@
 
 namespace Inventory.Domain
 {
-    using Microsoft.ServiceFabric.Actors;
+    using Common;
+    using Microsoft.ServiceFabric.Services.Client;
     using System;
     using System.Runtime.Serialization;
 
@@ -40,9 +41,9 @@ namespace Inventory.Domain
             return this.id.ToString(format, formatProvider);
         }
 
-        public long GetPartitionKey()
+        public ServicePartitionKey GetPartitionKey()
         {
-            return (long)CRC64.ToCRC64(this.id.ToByteArray());
+            return new ServicePartitionKey(HashUtil.getLongHashCode(this.id.ToString()));
         }
 
         public static bool operator ==(InventoryItemId item1, InventoryItemId item2)

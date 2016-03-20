@@ -5,9 +5,8 @@
 
 namespace RestockRequest.Actor
 {
-    using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using System;
-    using System.Fabric;
     using System.Threading;
 
     public class ServiceHost
@@ -16,16 +15,13 @@ namespace RestockRequest.Actor
         {
             try
             {
-                using (FabricRuntime fabricRuntime = FabricRuntime.Create())
-                {
-                    fabricRuntime.RegisterActor<RestockRequestActor>();
+                ActorRuntime.RegisterActorAsync<RestockRequestActor>().GetAwaiter().GetResult();
 
-                    Thread.Sleep(Timeout.Infinite);
-                }
+                Thread.Sleep(Timeout.Infinite);
             }
             catch (Exception e)
             {
-                ActorEventSource.Current.ActorHostInitializationFailed(e);
+                ActorEventSource.Current.ActorHostInitializationFailed(e.ToString());
                 throw;
             }
         }

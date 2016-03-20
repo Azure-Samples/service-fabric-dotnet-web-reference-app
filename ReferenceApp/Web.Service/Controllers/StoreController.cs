@@ -7,11 +7,13 @@ namespace Web.Service.Controllers
 {
     using Common;
     using Inventory.Domain;
+    using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
     using System.Fabric;
     using System.Fabric.Query;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Web.Http;
 
@@ -41,9 +43,9 @@ namespace Web.Service.Controllers
             foreach (Partition p in partitions)
             {
                 long minKey = (p.PartitionInformation as Int64RangePartitionInformation).LowKey;
-                IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(minKey, serviceName);
+                IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(serviceName, new ServicePartitionKey(minKey));
 
-                var result = await inventoryServiceClient.GetCustomerInventoryAsync();
+                var result = await inventoryServiceClient.GetCustomerInventoryAsync(CancellationToken.None);
                 if (result != null)
                 {
                     itemList.AddRange(result);

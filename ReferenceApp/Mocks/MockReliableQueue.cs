@@ -30,52 +30,52 @@ namespace Mocks
             return Task.FromResult(true);
         }
 
-        public Task<ConditionalResult<T>> TryDequeueAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
+        public Task<ConditionalValue<T>> TryDequeueAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
         {
             T item;
             bool result = this.queue.TryDequeue(out item);
 
-            return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalValue<T>(result, item));
         }
 
-        public Task<ConditionalResult<T>> TryDequeueAsync(ITransaction tx)
+        public Task<ConditionalValue<T>> TryDequeueAsync(ITransaction tx)
         {
             T item;
             bool result = this.queue.TryDequeue(out item);
 
-            return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalValue<T>(result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, LockMode lockMode, TimeSpan timeout, CancellationToken cancellationToken)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx, LockMode lockMode, TimeSpan timeout, CancellationToken cancellationToken)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalValue<T>(result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, LockMode lockMode)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx, LockMode lockMode)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalValue<T>(result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalValue<T>(result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult(new ConditionalResult<T>(result, item));
+            return Task.FromResult(new ConditionalValue<T>(result, item));
         }
 
         public Task ClearAsync()
@@ -107,6 +107,11 @@ namespace Mocks
         }
 
         public Task<long> GetCountAsync(ITransaction tx)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<IAsyncEnumerable<T>> IReliableQueue<T>.CreateEnumerableAsync(ITransaction tx)
         {
             throw new NotImplementedException();
         }

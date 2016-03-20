@@ -5,9 +5,8 @@
 
 namespace CustomerOrder.Actor
 {
-    using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using System;
-    using System.Fabric;
     using System.Threading;
 
     public class Program
@@ -16,16 +15,13 @@ namespace CustomerOrder.Actor
         {
             try
             {
-                using (FabricRuntime fabricRuntime = FabricRuntime.Create())
-                {
-                    fabricRuntime.RegisterActor<CustomerOrderActor>();
+                ActorRuntime.RegisterActorAsync<CustomerOrderActor>();
+                Thread.Sleep(Timeout.Infinite);
 
-                    Thread.Sleep(Timeout.Infinite);
-                }
             }
             catch (Exception e)
             {
-                ActorEventSource.Current.ActorHostInitializationFailed(e);
+                ActorEventSource.Current.ActorHostInitializationFailed(e.ToString());
                 throw;
             }
         }

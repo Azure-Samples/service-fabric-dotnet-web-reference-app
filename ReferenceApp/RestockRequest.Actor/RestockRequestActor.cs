@@ -5,18 +5,21 @@
 
 namespace RestockRequest.Actor
 {
-    using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using RestockRequest.Domain;
     using System;
     using System.Fabric;
     using System.Threading.Tasks;
 
-    internal class RestockRequestActor : StatefulActor<RestockRequestActorState>, IRestockRequestActor, IRemindable
+    //internal class RestockRequestActor : StatefulActor<RestockRequestActorState>, IRestockRequestActor, IRemindable
+    internal class RestockRequestActor : Actor, IRestockRequestActor, IRemindable
     {
         // The duration the verification at beginning of each pipeline step takes
         private static TimeSpan PipelineStageVerificationDelay = TimeSpan.FromSeconds(5);
         // The duration each step of the pipeline takes
         private static TimeSpan PipelineStageProcessingDuration = TimeSpan.FromSeconds(10);
+
+        private static string ActorStatePropertyName = "RestockRequestActorStatePropertyName";
 
         public Task ReceiveReminderAsync(string reminderName, byte[] context, TimeSpan dueTime, TimeSpan period)
         {
@@ -38,41 +41,47 @@ namespace RestockRequest.Actor
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public Task AddRestockRequestAsync(RestockRequest request)
+        public async Task AddRestockRequestAsync(RestockRequest request)
         {
-            if (this.State.IsStarted()) //Don't accept a request that is already started
+            var state = await this.StateManager.GetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
+
+            if (state.IsStarted()) //Don't accept a request that is already started
             {
-                ActorEventSource.Current.Message(string.Format("RestockRequestActor: {0}: Can't accept restock request in this state", this.State));
-                throw new InvalidOperationException(string.Format("{0}: Can't accept restock request in this state", this.State));
+                ActorEventSource.Current.Message(string.Format("RestockRequestActor: {0}: Can't accept restock request in this state", state));
+                throw new InvalidOperationException(string.Format("{0}: Can't accept restock request in this state", state));
             }
 
             // Accept the request
             ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: Accept update quantity request {0}", request);
 
-            this.State.Status = RestockRequestStatus.Accepted;
-            this.State.Request = request;
+            state.Status = RestockRequestStatus.Accepted;
+            state.Request = request;
+
+            await this.StateManager.SetStateAsync<RestockRequestActorState>(ActorStatePropertyName, state);
 
             // Start a reminder to go through the processing pipeline.
             // A reminder keeps the actor from being garbage collected due to lack of use, 
             // which works better than a timer in this case.
-            return this.RegisterReminderAsync(
+            await this.RegisterReminderAsync(
                 RestockRequestReminderNames.RestockPipelineChangeReminderName,
                 null,
                 PipelineStageVerificationDelay,
-                PipelineStageProcessingDuration,
-                ActorReminderAttributes.None);
+                PipelineStageProcessingDuration);
+
+            return;
         }
 
-        protected override Task OnActivateAsync()
+        protected override async Task OnActivateAsync()
         {
-            if (this.State == null)
+            var state = await this.StateManager.TryGetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
+
+            if (!state.HasValue)
             {
-                this.State = new RestockRequestActorState();
+                await this.StateManager.SetStateAsync<RestockRequestActorState>(ActorStatePropertyName, new RestockRequestActorState());
+                ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: State initialized");
             }
 
-            ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: State initialized to {0}", this.State);
-
-            return Task.FromResult(true);
+            return;
         }
 
         /// <summary>
@@ -80,40 +89,47 @@ namespace RestockRequest.Actor
         /// until it reaches the complete stage.
         /// </summary>
         /// <returns></returns>
-        internal Task RestockPipeline()
+        internal async Task RestockPipeline()
         {
-            ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: {0}: Pipeline change reminder", this.State);
+            var state = await this.StateManager.GetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
 
-            switch (this.State.Status)
+            ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: {0}: Pipeline change reminder", state);
+
+            switch (state.Status)
             {
                 case RestockRequestStatus.Accepted:
 
                     // Change to next step and let it "execute" until the reminder fires again
-                    this.State.Status = RestockRequestStatus.Manufacturing;
-                    return Task.FromResult(true);
+                    state.Status = RestockRequestStatus.Manufacturing;
+                    break;
 
                 case RestockRequestStatus.Manufacturing:
 
                     // Changet the step to completed to indicate the "processing" is complete.
-                    this.State.Status = RestockRequestStatus.Completed;
+                    state.Status = RestockRequestStatus.Completed;
 
                     // Raise the event to let interested parties (RestockRequestManager) know that the restock is complete
-                    this.SignalRequestStatusChange();
+                    this.SignalRequestStatusChange(state);
 
                     // Done, so unregister the reminder
-                    return this.UnregisterRestockPipelineChangeReminderAsync();
+                    await this.UnregisterRestockPipelineChangeReminderAsync();
+                    break;
 
                 default:
-                    throw new InvalidOperationException(string.Format("{0}: remainder received in invalid status", this.State));
+                    throw new InvalidOperationException(string.Format("{0}: remainder received in invalid status", state));
+
             }
+
+            await this.StateManager.SetStateAsync<RestockRequestActorState>(ActorStatePropertyName, state);
+            return;
         }
 
-        private void SignalRequestStatusChange()
+        private void SignalRequestStatusChange(RestockRequestActorState state)
         {
-            ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: {0}: Raise event for state change", this.State);
+            ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: {0}: Raise event for state change", state);
 
             IRestockRequestEvents events = this.GetEvent<IRestockRequestEvents>();
-            events.RestockRequestCompleted(this.Id, this.State.Request);
+            events.RestockRequestCompleted(this.Id, state.Request);
         }
 
         private Task UnregisterRestockPipelineChangeReminderAsync()

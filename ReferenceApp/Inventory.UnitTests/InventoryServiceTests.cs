@@ -11,19 +11,38 @@ namespace Inventory.UnitTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
     using System;
+    using System.Fabric;
+    using System.Threading;
     using System.Threading.Tasks;
 
     [TestClass]
     public class InventoryServiceTests
     {
-        private StatefulServiceParameters parameters = new StatefulServiceParameters(
-        null,
-        null,
-        Guid.NewGuid(),
-        new Uri("fabric:/someapp/someservice"),
-        "InventoryServiceType",
-        long.MaxValue
-        );
+
+        private static ICodePackageActivationContext codePackageContext = new MockCodePackageActivationContext(
+            "fabric:/someapp",
+            "SomeAppType",
+            "Code",
+            "1.0.0.0",
+            Guid.NewGuid().ToString(),
+            @"C:\Log",
+            @"C:\Temp",
+            @"C:\Work",
+            "ServiceManifest",
+            "1.0.0.0"
+            );
+
+
+        StatefulServiceContext statefulServiceContext = new StatefulServiceContext(
+            new NodeContext("Node0", new NodeId(0, 1), 0, "NodeType1", "TEST.MACHINE"),
+            codePackageContext,
+            InventoryService.InventoryServiceType,
+            new Uri("fabric:/someapp/someservice"),
+            null,
+            Guid.NewGuid(),
+            long.MaxValue
+            );
+
 
 
         [TestMethod]
@@ -31,13 +50,13 @@ namespace Inventory.UnitTests
         {
             MockReliableStateManager stateManager = new MockReliableStateManager();
 
-            InventoryService target = new InventoryService(stateManager, parameters);
+            InventoryService target = new InventoryService(statefulServiceContext, stateManager);
 
             InventoryItem expected = new InventoryItem("test", 1, 10, 1, 10);
 
             await target.CreateInventoryItemAsync(expected);
-            bool resultTrue = await target.IsItemInInventoryAsync(expected.Id);
-            bool resultFalse = await target.IsItemInInventoryAsync(new InventoryItemId());
+            bool resultTrue = await target.IsItemInInventoryAsync(expected.Id, CancellationToken.None);
+            bool resultFalse = await target.IsItemInInventoryAsync(new InventoryItemId(), CancellationToken.None);
 
             Assert.IsTrue(resultTrue);
             Assert.IsFalse(resultFalse);
@@ -49,7 +68,7 @@ namespace Inventory.UnitTests
             int expectedQuantity = 10;
             int quantityToAdd = 3;
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager, parameters);
+            InventoryService target = new InventoryService(statefulServiceContext, stateManager);
 
             InventoryItem item = new InventoryItem("test", 1, expectedQuantity - quantityToAdd, 1, expectedQuantity);
 
@@ -68,7 +87,7 @@ namespace Inventory.UnitTests
             int expectedQuantity = 5;
             int quantityToRemove = 3;
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager, parameters);
+            InventoryService target = new InventoryService(statefulServiceContext, stateManager);
 
             InventoryItem item = new InventoryItem("test", 1, expectedQuantity + quantityToRemove, 1, expectedQuantity);
 
@@ -86,7 +105,7 @@ namespace Inventory.UnitTests
             int expectedQuantity = 5;
             int quantityToRemove = 3;
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            InventoryService target = new InventoryService(stateManager, parameters);
+            InventoryService target = new InventoryService(statefulServiceContext, stateManager);
 
             InventoryItem item = new InventoryItem("test", 1, totalStartingStock, 1, expectedQuantity);
 

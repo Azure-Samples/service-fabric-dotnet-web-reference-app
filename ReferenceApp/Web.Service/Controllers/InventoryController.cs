@@ -33,7 +33,7 @@ namespace Web.Service.Controllers
             InventoryItem i = new InventoryItem(description, price, number, reorderThreshold, max);
 
             ServiceUriBuilder builder = new ServiceUriBuilder(InventoryServiceName);
-            IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(i.Id.GetPartitionKey(), builder.ToUri());
+            IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(builder.ToUri(), i.Id.GetPartitionKey());
 
             try
             {

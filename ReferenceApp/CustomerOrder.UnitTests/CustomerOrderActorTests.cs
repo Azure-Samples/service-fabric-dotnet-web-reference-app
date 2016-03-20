@@ -9,6 +9,7 @@ namespace CustomerOrder.UnitTests
     using CustomerOrder.Domain;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
     using System;
@@ -19,6 +20,10 @@ namespace CustomerOrder.UnitTests
     [TestClass]
     public class CustomerOrderActorTests
     {
+        private const string OrderItemListPropertyName = "OrderList";
+        private const string OrderStatusPropertyName = "CustomerOrderStatus";
+        private const string RequestIdPropertyName = "RequestId";
+
         /// <summary>
         /// Tests FulfillOrder ships an order when all items are available from the InventoryService.
         /// </summary>
@@ -34,21 +39,21 @@ namespace CustomerOrder.UnitTests
 
             CustomerOrderActor target = new CustomerOrderActor();
 
-            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
+            PropertyInfo idProperty = typeof(Actor).GetProperty("Id");
             idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
 
             target.ServiceProxy = serviceProxy;
-            target.State = new CustomerOrderActorState();
 
-            target.State.Status = CustomerOrderStatus.Submitted;
-            target.State.OrderedItems = new List<CustomerOrderItem>()
+            await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
+            await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
+            await target.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>()
             {
                 new CustomerOrderItem(new InventoryItemId(), 4)
-            };
+            });
 
             await target.FulfillOrderAsync();
 
-            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Shipped, target.State.Status);
+            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Shipped, await target.StateManager.GetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName));
         }
 
         /// <summary>
@@ -75,16 +80,16 @@ namespace CustomerOrder.UnitTests
             idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
 
             target.ServiceProxy = serviceProxy;
-            target.State = new CustomerOrderActorState();
-            target.State.Status = CustomerOrderStatus.Submitted;
-            target.State.OrderedItems = new List<CustomerOrderItem>()
+            await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
+            await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
+            await target.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>()
             {
                 new CustomerOrderItem(new InventoryItemId(), 4)
-            };
+            });
 
             await target.FulfillOrderAsync();
 
-            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Backordered, target.State.Status);
+            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Backordered, await target.StateManager.GetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName));
         }
 
         /// <summary>
@@ -112,21 +117,21 @@ namespace CustomerOrder.UnitTests
             idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
 
             target.ServiceProxy = serviceProxy;
-            target.State = new CustomerOrderActorState();
-            target.State.Status = CustomerOrderStatus.Submitted;
-            target.State.OrderedItems = new List<CustomerOrderItem>()
+            await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
+            await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
+            await target.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>()
             {
-                new CustomerOrderItem(new InventoryItemId(), itemCount)
-            };
+                new CustomerOrderItem(new InventoryItemId(), 4)
+            });
 
             for (int i = 0; i < itemCount - 1; ++i)
             {
                 await target.FulfillOrderAsync();
-                Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Backordered, target.State.Status);
+                Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Backordered, await target.StateManager.GetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName));
             }
 
             await target.FulfillOrderAsync();
-            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Shipped, target.State.Status);
+            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Shipped, await target.StateManager.GetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName));
         }
 
         [TestMethod]
@@ -141,6 +146,7 @@ namespace CustomerOrder.UnitTests
                 RemoveStockAsyncFunc = (itemId, quantity, cmid) => Task.FromResult(0)
             };
 
+
             MockServiceProxy serviceProxy = new MockServiceProxy();
             serviceProxy.Supports<IInventoryService>(serviceUri => inventoryService);
 
@@ -150,16 +156,16 @@ namespace CustomerOrder.UnitTests
             idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
 
             target.ServiceProxy = serviceProxy;
-            target.State = new CustomerOrderActorState();
-            target.State.Status = CustomerOrderStatus.Submitted;
-            target.State.OrderedItems = new List<CustomerOrderItem>()
+            await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
+            await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
+            await target.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>()
             {
                 new CustomerOrderItem(new InventoryItemId(), 5)
-            };
+            });
 
             await target.FulfillOrderAsync();
 
-            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Canceled, target.State.Status);
+            Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Canceled, await target.StateManager.GetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName));
         }
     }
 }

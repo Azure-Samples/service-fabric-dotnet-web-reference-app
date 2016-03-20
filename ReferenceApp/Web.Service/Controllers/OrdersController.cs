@@ -8,6 +8,7 @@ namespace Web.Service.Controllers
     using Common;
     using CustomerOrder.Domain;
     using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Client;
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
@@ -83,7 +84,7 @@ namespace Web.Service.Controllers
 
             try
             {
-                return customerOrder.GetStatusAsync();
+                return customerOrder.GetOrderStatusAsStringAsync();
             }
             catch (Exception ex)
             {

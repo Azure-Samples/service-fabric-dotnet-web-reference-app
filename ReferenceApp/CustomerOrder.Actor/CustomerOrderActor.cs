@@ -6,23 +6,25 @@
 namespace CustomerOrder.Actor
 {
     using Common;
-    using Common.Wrappers;
     using CustomerOrder.Domain;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
+    using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
 
-    internal class CustomerOrderActor : StatefulActor<CustomerOrderActorState>, ICustomerOrderActor, IRemindable
+    internal class CustomerOrderActor : Actor, ICustomerOrderActor, IRemindable
     {
         private const string InventoryServiceName = "InventoryService";
+        private const string OrderItemListPropertyName = "OrderList";
+        private const string OrderStatusPropertyName = "CustomerOrderStatus";
+        private const string RequestIdPropertyName = "RequestId";
 
-        /// <summary>
-        /// TODO: Temporary property-injection for an IServiceProxyWrapper until constructor injection is available.
-        /// </summary>
-        public IServiceProxyWrapper ServiceProxy { private get; set; }
+        private CancellationTokenSource tokenSource = null;
 
         /// <summary>
         /// This method accepts a list of CustomerOrderItems, representing a customer order, and sets the actor's state
@@ -31,28 +33,55 @@ namespace CustomerOrder.Actor
         /// </summary>
         /// <param name="orderList"></param>
         /// <returns></returns>
-        public Task SubmitOrderAsync(IEnumerable<CustomerOrderItem> orderList)
+        public async Task SubmitOrderAsync(IEnumerable<CustomerOrderItem> orderList)
         {
-            this.State.OrderedItems = new List<CustomerOrderItem>(orderList);
-            this.State.Status = CustomerOrderStatus.Submitted;
+            try
+            {
+                await this.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>(orderList));
+                await this.StateManager.SetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName, CustomerOrderStatus.Submitted);
 
-            ActorEventSource.Current.ActorMessage(this, this.State.ToString());
+                await this.RegisterReminderAsync(
+                   CustomerOrderReminderNames.FulfillOrderReminder,
+                   null,
+                   TimeSpan.FromSeconds(10),
+                   TimeSpan.FromSeconds(10));
+            }
+            catch (Exception e)
+            {
+                ActorEventSource.Current.Message(e.ToString());
+            }
 
-            return this.RegisterReminderAsync(
-                CustomerOrderReminderNames.FulfillOrderReminder,
-                null,
-                TimeSpan.FromSeconds(10),
-                TimeSpan.FromSeconds(10),
-                ActorReminderAttributes.None);
+            ActorEventSource.Current.Message("Order submitted with {0} items", orderList.Count());
+
+
+            return;
         }
 
         /// <summary>
         /// Returns the status of the Customer Order. 
         /// </summary>
         /// <returns></returns>
-        public Task<string> GetStatusAsync()
+        public async Task<string> GetOrderStatusAsStringAsync()
         {
-            return Task.FromResult(this.State.Status.ToString());
+            return (await GetOrderStatusAsync()).ToString();
+        }
+
+        private async Task<CustomerOrderStatus> GetOrderStatusAsync()
+        {
+            var orderStatusResult = await this.StateManager.TryGetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName);
+            if (orderStatusResult.HasValue)
+            {
+                return orderStatusResult.Value;
+            }
+            else
+            {
+                return CustomerOrderStatus.Unknown;
+            }
+        }
+
+        private async Task SetOrderStatusAsync(CustomerOrderStatus orderStatus)
+        {
+            await this.StateManager.SetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName, orderStatus);
         }
 
         public async Task ReceiveReminderAsync(string reminderName, byte[] context, TimeSpan dueTime, TimeSpan period)
@@ -63,8 +92,9 @@ namespace CustomerOrder.Actor
 
                     await this.FulfillOrderAsync();
 
-                    if (this.State.Status == CustomerOrderStatus.Shipped ||
-                        this.State.Status == CustomerOrderStatus.Canceled)
+                    var orderStatus = await GetOrderStatusAsync();
+
+                    if (orderStatus == CustomerOrderStatus.Shipped || orderStatus == CustomerOrderStatus.Canceled)
                     {
                         //Remove fulfill order reminder so Actor can be gargabe collected.
                         IActorReminder orderReminder = this.GetReminder(CustomerOrderReminderNames.FulfillOrderReminder);
@@ -86,17 +116,28 @@ namespace CustomerOrder.Actor
         /// change the order's status to "Confirmed," and do not need to check if the actor's 
         /// state was already set to this. 
         /// </summary>
-        protected override Task OnActivateAsync()
+        /// 
+        protected override Task OnDeactivateAsync()
         {
-            if (this.State == null)
+            this.tokenSource.Cancel();
+            this.tokenSource.Dispose();
+            return Task.FromResult(true);
+        }
+        protected override async Task OnActivateAsync()
+        {
+
+            this.tokenSource = new CancellationTokenSource();
+
+            var orderStatusResult = await this.GetOrderStatusAsync();
+
+            if (orderStatusResult == CustomerOrderStatus.Unknown)
             {
-                this.State = new CustomerOrderActorState();
-                this.State.Status = CustomerOrderStatus.New;
+                await this.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>());
+                await this.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
+                await this.SetOrderStatusAsync(CustomerOrderStatus.New);
             }
 
-            this.ServiceProxy = new ServiceProxyWrapper();
-
-            return Task.FromResult(true);
+            return;
         }
 
         /// <summary>
@@ -117,26 +158,28 @@ namespace CustomerOrder.Actor
         {
             ServiceUriBuilder builder = new ServiceUriBuilder(InventoryServiceName);
 
-            this.State.Status = CustomerOrderStatus.InProcess;
+            await this.SetOrderStatusAsync(CustomerOrderStatus.InProcess);
 
-            ActorEventSource.Current.ActorMessage(this, "Fullfilling customer order. ID: {0}. Items: {1}", this.Id.GetGuidId(), this.State.OrderedItems.Count);
+            var orderedItems = await this.StateManager.GetStateAsync<IList<CustomerOrderItem>>(OrderItemListPropertyName);
 
-            foreach (CustomerOrderItem tempitem in this.State.OrderedItems)
+            ActorEventSource.Current.ActorMessage(this, "Fullfilling customer order. ID: {0}. Items: {1}", this.Id.GetGuidId(), orderedItems.Count);
+
+            foreach (CustomerOrderItem tempitem in orderedItems)
             {
                 ActorEventSource.Current.Message("OrderContains:{0}", tempitem);
             }
 
             //We loop through the customer order list. 
             //For every item that cannot be fulfilled, we add to backordered. 
-            foreach (CustomerOrderItem item in this.State.OrderedItems.Where(x => x.FulfillmentRemaining > 0))
+            foreach (CustomerOrderItem item in orderedItems.Where(x => x.FulfillmentRemaining > 0))
             {
-                IInventoryService inventoryService = this.ServiceProxy.Create<IInventoryService>(item.ItemId.GetPartitionKey(), builder.ToUri());
+                IInventoryService inventoryService = ServiceProxy.Create<IInventoryService>(builder.ToUri(), item.ItemId.GetPartitionKey());
 
                 //First, check the item is listed in inventory.  
                 //This will avoid infinite backorder status.
-                if ((await inventoryService.IsItemInInventoryAsync(item.ItemId)) == false)
+                if ((await inventoryService.IsItemInInventoryAsync(item.ItemId, this.tokenSource.Token)) == false)
                 {
-                    this.State.Status = CustomerOrderStatus.Canceled;
+                    await this.SetOrderStatusAsync(CustomerOrderStatus.Canceled);
                     return;
                 }
 
@@ -145,24 +188,42 @@ namespace CustomerOrder.Actor
                         inventoryService.RemoveStockAsync(
                             item.ItemId,
                             item.Quantity,
-                            new CustomerOrderActorMessageId(new ActorId(this.Id.GetGuidId()), this.State.RequestId));
+                            new CustomerOrderActorMessageId(new ActorId(this.Id.GetGuidId()), await this.StateManager.GetStateAsync<long>(RequestIdPropertyName)));
 
                 item.FulfillmentRemaining -= numberItemsRemoved;
             }
 
+            var items = await this.StateManager.GetStateAsync<IList<CustomerOrderItem>>(OrderItemListPropertyName);
+            bool backordered = false;
+
             // Set the status appropriately
-            this.State.Status = this.State.OrderedItems.Any(x => x.FulfillmentRemaining > 0)
-                ? this.State.Status = CustomerOrderStatus.Backordered
-                : this.State.Status = CustomerOrderStatus.Shipped;
+            foreach (CustomerOrderItem item in items)
+            {
+                if (item.FulfillmentRemaining > 0)
+                {
+                    backordered = true;
+                    break;
+                }
+            }
+
+            if (backordered)
+            {
+                await this.SetOrderStatusAsync(CustomerOrderStatus.Backordered);
+            }
+            else
+            {
+                await this.SetOrderStatusAsync(CustomerOrderStatus.Shipped);
+            }
 
             ActorEventSource.Current.ActorMessage(
                 this,
                 "{0}; Fulfilled: {1}. Backordered: {2}",
-                this.State,
-                this.State.OrderedItems.Count(x => x.FulfillmentRemaining == 0),
-                this.State.OrderedItems.Count(x => x.FulfillmentRemaining > 0));
+                await this.GetOrderStatusAsStringAsync(),
+                items.Count(x => x.FulfillmentRemaining == 0),
+                items.Count(x => x.FulfillmentRemaining > 0));
 
-            this.State.RequestId++;
+            var messageRequestId = await this.StateManager.GetStateAsync<long>(RequestIdPropertyName);
+            await this.StateManager.SetStateAsync<long>(RequestIdPropertyName, ++messageRequestId);
         }
     }
 }

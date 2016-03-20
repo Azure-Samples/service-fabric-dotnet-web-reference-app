@@ -5,9 +5,8 @@
 
 namespace RestockRequestManager.Service
 {
+    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
-    using System.Diagnostics;
-    using System.Fabric;
     using System.Threading;
 
     public class Program
@@ -16,21 +15,14 @@ namespace RestockRequestManager.Service
         {
             try
             {
-                using (FabricRuntime fabricRuntime = FabricRuntime.Create())
-                {
-                    // This is the name of the ServiceType that is registered with FabricRuntime. 
-                    // This name must match the name defined in the ServiceManifest. If you change
-                    // this name, please change the name of the ServiceType in the ServiceManifest.
-                    fabricRuntime.RegisterServiceType("RestockRequestManagerServiceType", typeof(RestockRequestManagerService));
+                ServiceRuntime.RegisterServiceAsync("RestockRequestManagerServiceType", (context) => new RestockRequestManagerService(context)).GetAwaiter().GetResult();
 
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(RestockRequestManagerService).Name);
+                Thread.Sleep(Timeout.Infinite);
 
-                    Thread.Sleep(Timeout.Infinite);
-                }
             }
             catch (Exception e)
             {
-                ServiceEventSource.Current.ServiceHostInitializationFailed(e);
+                ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
                 throw;
             }
         }
