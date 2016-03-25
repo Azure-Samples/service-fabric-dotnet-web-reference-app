@@ -36,7 +36,8 @@ namespace Inventory.Service
         private IBackupStore backupManager;
 
         //Set local or cloud backup, or none. Disabled is the default. Overridden by config.
-        private BackupManagerType backupStorageType = BackupManagerType.None;
+        private BackupManagerType backupStorageType;
+
 
         /// <summary>
         /// This constructor is used in unit tests to inject a different state manager for unit testing.
@@ -50,43 +51,7 @@ namespace Inventory.Service
 
         public InventoryService(StatefulServiceContext context, IReliableStateManagerReplica stateManagerReplica) : base(context, stateManagerReplica)
         {
-            var partitionId = context.PartitionId.ToString("N");
-            var minKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).LowKey;
-            var maxKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).HighKey;
 
-            if (context.CodePackageActivationContext != null)
-            {
-                ICodePackageActivationContext codePackageContext = context.CodePackageActivationContext;
-                var configPackage = codePackageContext.GetConfigurationPackageObject("Config");
-                var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
-
-                string backupSettingValue = configSection.Parameters["BackupMode"].Value;
-
-                if (string.Equals(backupSettingValue, "none", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    this.backupStorageType = BackupManagerType.None;
-                }
-                else if (string.Equals(backupSettingValue, "azure", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    this.backupStorageType = BackupManagerType.Azure;
-
-                    var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
-
-                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
-                }
-                else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    this.backupStorageType = BackupManagerType.Local;
-
-                    var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
-
-                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
-                }
-                else
-                {
-                    throw new ArgumentException("Unknown backup type");
-                }
-            }
         }
 
         /// <summary>
@@ -350,6 +315,7 @@ namespace Inventory.Service
         protected override async Task<bool> OnDataLossAsync(RestoreContext restoreCtx, CancellationToken cancellationToken)
         {
             ServiceEventSource.Current.ServiceMessage(this, "OnDataLoss Invoked!");
+            this.SetupBackupManager();
 
             try
             {
@@ -588,6 +554,7 @@ namespace Inventory.Service
         private async Task PeriodicTakeBackupAsync(CancellationToken cancellationToken)
         {
             long backupsTaken = 0;
+            SetupBackupManager();
 
             while (true)
             {
@@ -609,6 +576,49 @@ namespace Inventory.Service
 
                     ServiceEventSource.Current.ServiceMessage(this, "Backup {0} taken", backupsTaken);
                 }
+            }
+        }
+
+        private void SetupBackupManager()
+        {
+            var partitionId = this.Context.PartitionId.ToString("N");
+            var minKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).LowKey;
+            var maxKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).HighKey;
+
+            if (this.Context.CodePackageActivationContext != null)
+            {
+                ICodePackageActivationContext codePackageContext = this.Context.CodePackageActivationContext;
+                var configPackage = codePackageContext.GetConfigurationPackageObject("Config");
+                var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
+
+                string backupSettingValue = configSection.Parameters["BackupMode"].Value;
+
+                if (string.Equals(backupSettingValue, "none", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    this.backupStorageType = BackupManagerType.None;
+                }
+                else if (string.Equals(backupSettingValue, "azure", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    this.backupStorageType = BackupManagerType.Azure;
+
+                    var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
+
+                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
+                }
+                else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    this.backupStorageType = BackupManagerType.Local;
+
+                    var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
+
+                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
+                }
+                else
+                {
+                    throw new ArgumentException("Unknown backup type");
+                }
+
+                ServiceEventSource.Current.ServiceMessage(this, "Backup Manager Set Up");
             }
         }
 
