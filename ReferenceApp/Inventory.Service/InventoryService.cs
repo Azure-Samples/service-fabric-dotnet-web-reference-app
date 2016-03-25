@@ -51,6 +51,8 @@ namespace Inventory.Service
         public InventoryService(StatefulServiceContext context, IReliableStateManagerReplica stateManagerReplica) : base(context, stateManagerReplica)
         {
             var partitionId = context.PartitionId.ToString("N");
+            var minKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).LowKey;
+            var maxKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).HighKey;
 
             if (context.CodePackageActivationContext != null)
             {
@@ -70,7 +72,7 @@ namespace Inventory.Service
 
                     var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
 
-                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, codePackageContext.TempDirectory);
+                    this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
                 }
                 else if (string.Equals(backupSettingValue, "local", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -78,7 +80,7 @@ namespace Inventory.Service
 
                     var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
 
-                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, codePackageContext.TempDirectory);
+                    this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
                 }
                 else
                 {

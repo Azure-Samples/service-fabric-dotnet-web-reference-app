@@ -20,6 +20,8 @@ namespace Inventory.Service
         private string PartitionTempDirectory;
         private long backupFrequencyInSeconds;
         private int MaxBackupsToKeep;
+        private long keyMin;
+        private long keyMax;
 
         long IBackupStore.backupFrequencyInSeconds
         {
@@ -29,8 +31,11 @@ namespace Inventory.Service
             }
         }
 
-        public DiskBackupManager(ConfigurationSection configSection, string partitionId, string codePackageTempDirectory)
+        public DiskBackupManager(ConfigurationSection configSection, string partitionId, long keymin, long keymax, string codePackageTempDirectory)
         {
+            this.keyMin = keymin;
+            this.keyMax = keymax;
+
             string BackupArchivalPath = configSection.Parameters["BackupArchivalPath"].Value;
             this.backupFrequencyInSeconds = long.Parse(configSection.Parameters["BackupFrequencyInSeconds"].Value);
             this.MaxBackupsToKeep = int.Parse(configSection.Parameters["MaxBackupsToKeep"].Value);
@@ -44,6 +49,23 @@ namespace Inventory.Service
                 this.PartitionArchiveFolder,
                 this.PartitionTempDirectory,
                 this.MaxBackupsToKeep);
+        }
+
+        public Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
+        {
+            string fullArchiveDirectory = Path.Combine(this.PartitionArchiveFolder, string.Format("{0}_{1}_{2}", Guid.NewGuid().ToString("N"), this.keyMin, this.keyMax));
+
+            DirectoryInfo dirInfo = new DirectoryInfo(fullArchiveDirectory);
+            dirInfo.Create();
+
+            string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
+
+            ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
+
+            DirectoryInfo backupDirectory = new DirectoryInfo(backupInfo.Directory);
+            backupDirectory.Delete(true);
+
+            return Task.FromResult(true);
         }
 
         public Task<string> RestoreLatestBackupToTempLocation(CancellationToken cancellationToken)
@@ -97,23 +119,6 @@ namespace Inventory.Service
             ServiceEventSource.Current.Message("Old backups deleted");
 
             return;
-        }
-
-        public Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
-        {
-            string fullArchiveDirectory = Path.Combine(this.PartitionArchiveFolder, Guid.NewGuid().ToString("N"));
-
-            DirectoryInfo dirInfo = new DirectoryInfo(fullArchiveDirectory);
-            dirInfo.Create();
-
-            string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
-
-            ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
-
-            DirectoryInfo backupDirectory = new DirectoryInfo(backupInfo.Directory);
-            backupDirectory.Delete(true);
-
-            return Task.FromResult(true);
         }
     }
 }

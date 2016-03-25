@@ -27,6 +27,8 @@ namespace Inventory.Service
         private string partitionId;
 
         private long backupFrequencyInSeconds;
+        private long keyMin;
+        private long keyMax;
 
         long IBackupStore.backupFrequencyInSeconds
         {
@@ -36,8 +38,11 @@ namespace Inventory.Service
             }
         }
 
-        public AzureBlobBackupManager(ConfigurationSection configSection, string partitionId, string codePackageTempDirectory)
+        public AzureBlobBackupManager(ConfigurationSection configSection, string partitionId, long keymin, long keymax, string codePackageTempDirectory)
         {
+            this.keyMin = keymin;
+            this.keyMax = keymax;
+
             string backupAccountName = configSection.Parameters["BackupAccountName"].Value;
             string backupAccountKey = configSection.Parameters["PrimaryKeyForBackupTestAccount"].Value;
             string blobEndpointAddress = configSection.Parameters["BlobServiceEndpointAddress"].Value;
@@ -62,7 +67,7 @@ namespace Inventory.Service
             DirectoryInfo fullArchiveDirectoryInfo = new DirectoryInfo(fullArchiveDirectory);
             fullArchiveDirectoryInfo.Create();
 
-            string blobName = string.Format("{0}_{1}", Guid.NewGuid().ToString("N"), "Backup.zip");
+            string blobName = string.Format("{0}_{1}_{2}_{3}", Guid.NewGuid().ToString("N"), this.keyMin, this.keyMax, "Backup.zip");
             string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
 
             ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
