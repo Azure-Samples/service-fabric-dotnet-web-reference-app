@@ -53,7 +53,6 @@ namespace CustomerOrder.Actor
 
             ActorEventSource.Current.Message("Order submitted with {0} items", orderList.Count());
 
-
             return;
         }
 

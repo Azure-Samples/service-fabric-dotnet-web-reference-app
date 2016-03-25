@@ -11,11 +11,12 @@ namespace Mocks
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
     public class MockReliableDictionary<TKey, TValue> : IReliableDictionary<TKey, TValue>
-        where TKey : System.IComparable<TKey>, System.IEquatable<TKey>
+        where TKey : IComparable<TKey>, IEquatable<TKey>
     {
         private ConcurrentDictionary<TKey, TValue> dictionary = new ConcurrentDictionary<TKey, TValue>();
 
@@ -33,14 +34,21 @@ namespace Mocks
 
         public Task AddAsync(ITransaction tx, TKey key, TValue value)
         {
-            this.dictionary.TryAdd(key, value);
+            if (!this.dictionary.TryAdd(key, value))
+            {
+                throw new InvalidOperationException("key already exists: " + key.ToString());
+            }
+
 
             return Task.FromResult(true);
         }
 
         public Task AddAsync(ITransaction tx, TKey key, TValue value, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            this.dictionary.TryAdd(key, value);
+            if (!this.dictionary.TryAdd(key, value))
+            {
+                throw new InvalidOperationException("key already exists: " + key.ToString());
+            }
 
             return Task.FromResult(true);
         }
@@ -106,6 +114,7 @@ namespace Mocks
         {
             TValue value;
             bool result = this.dictionary.TryGetValue(key, out value);
+
             return Task.FromResult(new ConditionalValue<TValue>(result, value));
         }
 
@@ -113,6 +122,7 @@ namespace Mocks
         {
             TValue value;
             bool result = this.dictionary.TryGetValue(key, out value);
+
             return Task.FromResult(new ConditionalValue<TValue>(result, value));
         }
 
@@ -120,6 +130,7 @@ namespace Mocks
         {
             TValue value;
             bool result = this.dictionary.TryGetValue(key, out value);
+
             return Task.FromResult(new ConditionalValue<TValue>(result, value));
         }
 
@@ -146,130 +157,87 @@ namespace Mocks
             return Task.FromResult(true);
         }
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return this.dictionary.GetEnumerator();
-        }
-
-        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable()
-        {
-            return this.CreateEnumerable();
-        }
-
-        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(EnumerationMode enumerationMode)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(Func<TKey, bool> filter, EnumerationMode enumerationMode)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<TValue> GetOrAddAsync(ITransaction tx, TKey key, Func<TKey, TValue> valueFactory)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.GetOrAdd(key, valueFactory));
         }
 
         public Task<TValue> GetOrAddAsync(ITransaction tx, TKey key, TValue value)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.GetOrAdd(key, value));
         }
 
         public Task<TValue> GetOrAddAsync(ITransaction tx, TKey key, Func<TKey, TValue> valueFactory, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.GetOrAdd(key, valueFactory));
         }
 
         public Task<TValue> GetOrAddAsync(ITransaction tx, TKey key, TValue value, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.GetOrAdd(key, value));
         }
 
         public Task<bool> TryAddAsync(ITransaction tx, TKey key, TValue value)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.TryAdd(key, value));
         }
 
         public Task<bool> TryAddAsync(ITransaction tx, TKey key, TValue value, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.TryAdd(key, value));
         }
 
         public Task<ConditionalValue<TValue>> TryRemoveAsync(ITransaction tx, TKey key)
         {
-            throw new NotImplementedException();
+            TValue outValue;
+            return Task.FromResult(new ConditionalValue<TValue>(this.dictionary.TryRemove(key, out outValue), outValue));
         }
 
         public Task<ConditionalValue<TValue>> TryRemoveAsync(ITransaction tx, TKey key, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return this.TryRemoveAsync(tx, key);
         }
 
         public Task<bool> TryUpdateAsync(ITransaction tx, TKey key, TValue newValue, TValue comparisonValue)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.TryUpdate(key, newValue, comparisonValue));
         }
 
         public Task<bool> TryUpdateAsync(
             ITransaction tx, TKey key, TValue newValue, TValue comparisonValue, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(this.dictionary.TryUpdate(key, newValue, comparisonValue));
         }
 
         public Task<long> GetCountAsync()
         {
-            throw new NotImplementedException();
+            return Task.FromResult((long)this.dictionary.Count);
         }
 
-        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn)
+        public Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction txn)
         {
-            throw new NotImplementedException();
+            return Task.FromResult<IAsyncEnumerable<KeyValuePair<TKey, TValue>>>(new MockAsyncEnumerable<KeyValuePair<TKey, TValue>>(this.dictionary));
         }
 
-        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn, EnumerationMode enumerationMode)
+        public Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction txn, EnumerationMode enumerationMode)
         {
-            throw new NotImplementedException();
+            return Task.FromResult<IAsyncEnumerable<KeyValuePair<TKey, TValue>>>(new MockAsyncEnumerable<KeyValuePair<TKey, TValue>>(
+                enumerationMode == EnumerationMode.Unordered
+                    ? (IEnumerable<KeyValuePair<TKey, TValue>>)this.dictionary
+                    : this.dictionary.OrderBy(x => x.Key)));
         }
 
-        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn, Func<TKey, bool> filter, EnumerationMode enumerationMode)
+        public Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction txn, Func<TKey, bool> filter, EnumerationMode enumerationMode)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction txn)
-        {
-            return Task.FromResult<IEnumerable<KeyValuePair<TKey, TValue>>>(this.dictionary.ToArray());
-        }
-
-        public Task<IEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction txn, EnumerationMode enumerationMode)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction txn, Func<TKey, bool> filter, EnumerationMode enumerationMode)
-        {
-            throw new NotImplementedException();
+            return Task.FromResult<IAsyncEnumerable<KeyValuePair<TKey, TValue>>>(new MockAsyncEnumerable<KeyValuePair<TKey, TValue>>(
+                enumerationMode == EnumerationMode.Unordered
+                    ? this.dictionary.Where(x => filter(x.Key))
+                    : this.dictionary.Where(x => filter(x.Key)).OrderBy(x => x.Key)));
         }
 
         public Task<long> GetCountAsync(ITransaction tx)
         {
-            throw new NotImplementedException();
-        }
-
-        Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> IReliableDictionary<TKey, TValue>.CreateEnumerableAsync(ITransaction txn)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> IReliableDictionary<TKey, TValue>.CreateEnumerableAsync(ITransaction txn, EnumerationMode enumerationMode)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> IReliableDictionary<TKey, TValue>.CreateEnumerableAsync(ITransaction txn, Func<TKey, bool> filter, EnumerationMode enumerationMode)
-        {
-            throw new NotImplementedException();
+            return Task.FromResult((long)this.dictionary.Count);
         }
     }
 }

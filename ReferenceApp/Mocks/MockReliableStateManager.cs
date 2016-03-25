@@ -25,9 +25,6 @@ namespace Mocks
             {typeof(IReliableQueue<>), typeof(MockReliableQueue<>)}
         };
 
-        public event EventHandler<NotifyTransactionChangedEventArgs> TransactionChanged;
-        public event EventHandler<NotifyStateManagerChangedEventArgs> StateManagerChanged;
-
         public Func<CancellationToken, Task<bool>> OnDataLossAsync
         {
             set
@@ -36,54 +33,13 @@ namespace Mocks
             }
         }
 
-        public void Initialize(StatefulServiceInitializationParameters initializationParameters)
-        {
-            throw new NotImplementedException();
-        }
+        public event EventHandler<NotifyTransactionChangedEventArgs> TransactionChanged;
+        public event EventHandler<NotifyStateManagerChangedEventArgs> StateManagerChanged;
 
-        public Task<IReplicator> OpenAsync(ReplicaOpenMode openMode, IStatefulServicePartition partition, CancellationToken cancellationToken)
+        public Task ClearAsync(ITransaction tx)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task ChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task CloseAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Abort()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task BackupAsync(Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task BackupAsync(BackupOption option, TimeSpan timeout, CancellationToken cancellationToken, Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RestoreAsync(string backupFolderPath)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RestoreAsync(string backupFolderPath, RestorePolicy restorePolicy, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool TryAddStateSerializer<T>(IStateSerializer<T> stateSerializer)
-        {
-            throw new NotImplementedException();
+            this.store.Clear();
+            return Task.FromResult(true);
         }
 
         public Task ClearAsync()
@@ -92,60 +48,9 @@ namespace Mocks
             return Task.FromResult(true);
         }
 
-        public Task ClearAsync(ITransaction tx)
-        {
-            this.store.Clear();
-            return Task.FromResult(true);
-        }
-
         public ITransaction CreateTransaction()
         {
             return new MockTransaction();
-        }
-
-        public Task<T> GetOrAddAsync<T>(string name) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
-        }
-
-        private Uri ToUri(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<T> GetOrAddAsync<T>(ITransaction tx, string name) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
-        }
-
-        public Task<T> GetOrAddAsync<T>(string name, TimeSpan timeout) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
-        }
-
-        public Task<T> GetOrAddAsync<T>(ITransaction tx, string name, TimeSpan timeout) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
-        }
-
-        public Task<T> GetOrAddAsync<T>(Uri name) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
-        }
-
-        public Task<T> GetOrAddAsync<T>(Uri name, TimeSpan timeout) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
-        }
-
-        public Task<T> GetOrAddAsync<T>(ITransaction tx, Uri name) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
-        }
-
-        public Task<T> GetOrAddAsync<T>(ITransaction tx, Uri name, TimeSpan timeout) where T : IReliableState
-        {
-            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
         }
 
         public Task RemoveAsync(string name)
@@ -211,23 +116,64 @@ namespace Mocks
 
             return Task.FromResult(true);
         }
+
         public Task<ConditionalValue<T>> TryGetAsync<T>(string name) where T : IReliableState
         {
-            IReliableState result;
-            bool success = this.store.TryGetValue(this.ToUri(name), out result);
+            IReliableState item;
+            bool result = this.store.TryGetValue(this.ToUri(name), out item);
 
-            return Task.FromResult(new ConditionalValue<T>(success, (T)result));
+            return Task.FromResult(new ConditionalValue<T>(result, (T)item));
         }
 
         public Task<ConditionalValue<T>> TryGetAsync<T>(Uri name) where T : IReliableState
         {
-            IReliableState result;
-            bool success = this.store.TryGetValue(name, out result);
+            IReliableState item;
+            bool result = this.store.TryGetValue(name, out item);
 
-            return Task.FromResult(new ConditionalValue<T>(success, (T)result));
+            return Task.FromResult(new ConditionalValue<T>(result, (T)item));
         }
 
-        public IAsyncEnumerator<IReliableState> GetAsyncEnumerator()
+        public Task<T> GetOrAddAsync<T>(string name) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(ITransaction tx, string name) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(string name, TimeSpan timeout) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(ITransaction tx, string name, TimeSpan timeout) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(this.ToUri(name), this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(Uri name) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(Uri name, TimeSpan timeout) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(ITransaction tx, Uri name) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
+        }
+
+        public Task<T> GetOrAddAsync<T>(ITransaction tx, Uri name, TimeSpan timeout) where T : IReliableState
+        {
+            return Task.FromResult((T)this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
+        }
+
+        public bool TryAddStateSerializer<T>(IStateSerializer<T> stateSerializer)
         {
             throw new NotImplementedException();
         }
@@ -237,6 +183,60 @@ namespace Mocks
             Type mockType = this.dependencyMap[t.GetGenericTypeDefinition()];
 
             return (IReliableState)Activator.CreateInstance(mockType.MakeGenericType(t.GetGenericArguments()));
+        }
+
+        private Uri ToUri(string name)
+        {
+            return new Uri("mock://" + name, UriKind.Absolute);
+        }
+
+        public IAsyncEnumerator<IReliableState> GetAsyncEnumerator()
+        {
+            return new MockAsyncEnumerator<IReliableState>(this.store.Values.GetEnumerator());
+        }
+
+        public void Initialize(StatefulServiceInitializationParameters initializationParameters)
+        {
+
+        }
+
+        public Task<IReplicator> OpenAsync(ReplicaOpenMode openMode, IStatefulServicePartition partition, CancellationToken cancellationToken)
+        {
+            return null;
+        }
+
+        public Task ChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task CloseAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+
+        public void Abort()
+        {
+        }
+
+        public Task BackupAsync(Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task BackupAsync(BackupOption option, TimeSpan timeout, CancellationToken cancellationToken, Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RestoreAsync(string backupFolderPath)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RestoreAsync(string backupFolderPath, RestorePolicy restorePolicy, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

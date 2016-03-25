@@ -11,10 +11,10 @@ namespace Mocks
 
     public class MockTransaction : ITransaction
     {
-        //public Task<long> CommitAsync()
-        //{
-        //    return Task.FromResult(0L);
-        //}
+        public Task CommitAsync()
+        {
+            return Task.FromResult(true);
+        }
 
         public void Abort()
         {
@@ -40,11 +40,6 @@ namespace Mocks
         public Task<long> GetVisibilitySequenceNumberAsync()
         {
             return Task.FromResult(0L);
-        }
-
-        public Task CommitAsync()
-        {
-            return Task.FromResult<bool>(true);
         }
     }
 }
