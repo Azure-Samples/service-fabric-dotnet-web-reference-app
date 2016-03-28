@@ -5,9 +5,6 @@
 
 namespace Inventory.Service
 {
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.WindowsAzure.Storage.Auth;
-    using Microsoft.WindowsAzure.Storage.Blob;
     using System;
     using System.Collections.Generic;
     using System.Fabric.Description;
@@ -16,6 +13,9 @@ namespace Inventory.Service
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.WindowsAzure.Storage.Auth;
+    using Microsoft.WindowsAzure.Storage.Blob;
 
     public class AzureBlobBackupManager : IBackupStore
     {
@@ -29,14 +29,6 @@ namespace Inventory.Service
         private long backupFrequencyInSeconds;
         private long keyMin;
         private long keyMax;
-
-        long IBackupStore.backupFrequencyInSeconds
-        {
-            get
-            {
-                return backupFrequencyInSeconds;
-            }
-        }
 
         public AzureBlobBackupManager(ConfigurationSection configSection, string partitionId, long keymin, long keymax, string codePackageTempDirectory)
         {
@@ -56,6 +48,11 @@ namespace Inventory.Service
             this.cloudBlobClient = new CloudBlobClient(new Uri(blobEndpointAddress), storageCredentials);
             this.backupBlobContainer = this.cloudBlobClient.GetContainerReference(this.partitionId);
             this.backupBlobContainer.CreateIfNotExists();
+        }
+
+        long IBackupStore.backupFrequencyInSeconds
+        {
+            get { return this.backupFrequencyInSeconds; }
         }
 
         public async Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
@@ -88,7 +85,7 @@ namespace Inventory.Service
         {
             ServiceEventSource.Current.Message("AzureBlobBackupManager: Download backup async called.");
 
-            var lastBackupBlob = (await this.GetBackupBlobs(true)).First();
+            CloudBlockBlob lastBackupBlob = (await this.GetBackupBlobs(true)).First();
 
             ServiceEventSource.Current.Message("AzureBlobBackupManager: Downloading {0}", lastBackupBlob.Name);
 
@@ -98,7 +95,7 @@ namespace Inventory.Service
 
             lastBackupBlob.DownloadToFile(zipPath, FileMode.CreateNew);
 
-            var restorePath = Path.Combine(this.PartitionTempDirectory, downloadId);
+            string restorePath = Path.Combine(this.PartitionTempDirectory, downloadId);
 
             ZipFile.ExtractToDirectory(zipPath, restorePath);
 
@@ -116,9 +113,9 @@ namespace Inventory.Service
             {
                 ServiceEventSource.Current.Message("AzureBlobBackupManager: Deleting old backups");
 
-                var oldBackups = (await GetBackupBlobs(true)).Skip(this.MaxBackupsToKeep);
+                IEnumerable<CloudBlockBlob> oldBackups = (await this.GetBackupBlobs(true)).Skip(this.MaxBackupsToKeep);
 
-                foreach (var backup in oldBackups)
+                foreach (CloudBlockBlob backup in oldBackups)
                 {
                     ServiceEventSource.Current.Message("AzureBlobBackupManager: Deleting {0}", backup.Name);
                     await backup.DeleteAsync(cancellationToken);
@@ -138,7 +135,6 @@ namespace Inventory.Service
             {
                 await cbb.FetchAttributesAsync();
                 itemizedBlobs.Add(cbb);
-
             }
 
             if (sorted)

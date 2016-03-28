@@ -5,14 +5,22 @@
 
 namespace RestockRequest.Actor
 {
-    using Microsoft.ServiceFabric.Actors.Runtime;
     using System;
     using System.Diagnostics.Tracing;
     using System.Threading.Tasks;
+    using Microsoft.ServiceFabric.Actors.Runtime;
 
     [EventSource(Name = "MyCompany-Web_UIApplication-RestockRequestActor")]
     internal sealed class ActorEventSource : EventSource
     {
+        private const int MessageEventId = 1;
+
+        // For very high-frequency events it might be advantageous to raise events using WriteEventCore API.
+        // This results in more efficient parameter handling, but requires explicit allocation of EventData structure and unsafe code.
+        // To enable this code path, define UNSAFE conditional compilation symbol and turn on unsafe code support in project properties.
+        private const int ActorMessageEventId = 2;
+
+        private const int ActorHostInitializationFailedEventId = 3;
         public static readonly ActorEventSource Current = new ActorEventSource();
 
         static ActorEventSource()
@@ -23,14 +31,8 @@ namespace RestockRequest.Actor
         }
 
         // Instance constructor is private to enforce singleton semantics
-        private ActorEventSource() : base() { }
-
-        // Event keywords can be used to categorize events. 
-        // Each keyword is a bit flag. A single event can be associated with multiple keywords (via EventAttribute.Keywords property).
-        // Keywords must be defined as a public class named 'Keywords' inside EventSource that uses them.
-        public static class Keywords
+        private ActorEventSource() : base()
         {
-            public const EventKeywords HostInitialization = (EventKeywords)0x1L;
         }
 
         // Define an instance method for each event you want to record and apply an [Event] attribute to it.
@@ -47,17 +49,16 @@ namespace RestockRequest.Actor
             if (this.IsEnabled())
             {
                 string finalMessage = string.Format(message, args);
-                Message(finalMessage);
+                this.Message(finalMessage);
             }
         }
 
-        private const int MessageEventId = 1;
         [Event(MessageEventId, Level = EventLevel.Informational, Message = "{0}")]
         public void Message(string message)
         {
             if (this.IsEnabled())
             {
-                WriteEvent(MessageEventId, message);
+                this.WriteEvent(MessageEventId, message);
             }
         }
 
@@ -71,7 +72,7 @@ namespace RestockRequest.Actor
                 && actor.ActorService.Context.CodePackageActivationContext != null)
             {
                 string finalMessage = string.Format(message, args);
-                ActorMessage(
+                this.ActorMessage(
                     actor.GetType().ToString(),
                     actor.Id.ToString(),
                     actor.ActorService.Context.CodePackageActivationContext.ApplicationTypeName,
@@ -85,13 +86,16 @@ namespace RestockRequest.Actor
             }
         }
 
-        // For very high-frequency events it might be advantageous to raise events using WriteEventCore API.
-        // This results in more efficient parameter handling, but requires explicit allocation of EventData structure and unsafe code.
-        // To enable this code path, define UNSAFE conditional compilation symbol and turn on unsafe code support in project properties.
-        private const int ActorMessageEventId = 2;
+        [Event(ActorHostInitializationFailedEventId, Level = EventLevel.Error, Message = "Actor host initialization failed",
+            Keywords = Keywords.HostInitialization)]
+        public void ActorHostInitializationFailed(string exception)
+        {
+            this.WriteEvent(ActorHostInitializationFailedEventId, exception);
+        }
+
         [Event(ActorMessageEventId, Level = EventLevel.Informational, Message = "{9}")]
         private
-            void ActorMessage(
+        void ActorMessage(
             string actorType,
             string actorId,
             string applicationTypeName,
@@ -103,26 +107,26 @@ namespace RestockRequest.Actor
             string nodeName,
             string message)
         {
-            WriteEvent(
-                    ActorMessageEventId,
-                    actorType,
-                    actorId,
-                    applicationTypeName,
-                    applicationName,
-                    serviceTypeName,
-                    serviceName,
-                    partitionId,
-                    replicaOrInstanceId,
-                    nodeName,
-                    message);
-
+            this.WriteEvent(
+                ActorMessageEventId,
+                actorType,
+                actorId,
+                applicationTypeName,
+                applicationName,
+                serviceTypeName,
+                serviceName,
+                partitionId,
+                replicaOrInstanceId,
+                nodeName,
+                message);
         }
 
-        private const int ActorHostInitializationFailedEventId = 3;
-        [Event(ActorHostInitializationFailedEventId, Level = EventLevel.Error, Message = "Actor host initialization failed", Keywords = Keywords.HostInitialization)]
-        public void ActorHostInitializationFailed(string exception)
+        // Event keywords can be used to categorize events. 
+        // Each keyword is a bit flag. A single event can be associated with multiple keywords (via EventAttribute.Keywords property).
+        // Keywords must be defined as a public class named 'Keywords' inside EventSource that uses them.
+        public static class Keywords
         {
-            WriteEvent(ActorHostInitializationFailedEventId, exception);
+            public const EventKeywords HostInitialization = (EventKeywords) 0x1L;
         }
     }
 }

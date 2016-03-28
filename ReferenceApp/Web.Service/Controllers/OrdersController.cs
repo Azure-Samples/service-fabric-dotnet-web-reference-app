@@ -5,14 +5,14 @@
 
 namespace Web.Service.Controllers
 {
-    using Common;
-    using CustomerOrder.Domain;
-    using Microsoft.ServiceFabric.Actors;
-    using Microsoft.ServiceFabric.Actors.Client;
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using System.Web.Http;
+    using Common;
+    using CustomerOrder.Domain;
+    using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Client;
 
     public class OrdersController : ApiController
     {

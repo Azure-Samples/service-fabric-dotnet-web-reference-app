@@ -5,16 +5,15 @@
 
 namespace Inventory.Domain
 {
-    using Common;
-    using Microsoft.ServiceFabric.Services.Client;
     using System;
     using System.Runtime.Serialization;
+    using Common;
+    using Microsoft.ServiceFabric.Services.Client;
 
     [DataContract]
     public class InventoryItemId : IFormattable, IComparable, IComparable<InventoryItemId>, IEquatable<InventoryItemId>
     {
-        [DataMember]
-        private Guid id;
+        [DataMember] private Guid id;
 
         public InventoryItemId()
         {
@@ -23,7 +22,7 @@ namespace Inventory.Domain
 
         public int CompareTo(object obj)
         {
-            return this.id.CompareTo(((InventoryItemId)obj).id);
+            return this.id.CompareTo(((InventoryItemId) obj).id);
         }
 
         public int CompareTo(InventoryItemId other)
@@ -58,7 +57,7 @@ namespace Inventory.Domain
 
         public override bool Equals(object obj)
         {
-            return (obj is InventoryItemId) ? this.id.Equals(((InventoryItemId)obj).id) : false;
+            return (obj is InventoryItemId) ? this.id.Equals(((InventoryItemId) obj).id) : false;
         }
 
         public override int GetHashCode()

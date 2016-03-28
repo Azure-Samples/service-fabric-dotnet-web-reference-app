@@ -5,6 +5,13 @@
 
 namespace Inventory.Service
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Fabric;
+    using System.Fabric.Description;
+    using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Common;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Data;
@@ -16,21 +23,15 @@ namespace Inventory.Service
     using Microsoft.ServiceFabric.Services.Runtime;
     using RestockRequest.Domain;
     using RestockRequestManager.Domain;
-    using System;
-    using System.Collections.Generic;
-    using System.Fabric;
-    using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
 
     internal class InventoryService : StatefulService, IInventoryService
     {
+        internal const string InventoryServiceType = "InventoryServiceType";
         private const string InventoryItemDictionaryName = "inventoryItems";
         private const string ActorMessageDictionaryName = "incomingMessages";
         private const string RestockRequestManagerServiceName = "RestockRequestManager";
         private const string RequestHistoryDictionaryName = "RequestHistory";
         private const string BackupCountDictionaryName = "BackupCountingDictionary";
-        internal const string InventoryServiceType = "InventoryServiceType";
 
         //private IReliableStateManager stateManager;
         private IBackupStore backupManager;
@@ -43,15 +44,12 @@ namespace Inventory.Service
         /// This constructor is used in unit tests to inject a different state manager for unit testing.
         /// </summary>
         /// <param name="stateManager"></param>
-
         public InventoryService(StatefulServiceContext serviceContext) : this(serviceContext, (new ReliableStateManager(serviceContext)))
         {
-
         }
 
         public InventoryService(StatefulServiceContext context, IReliableStateManagerReplica stateManagerReplica) : base(context, stateManagerReplica)
         {
-
         }
 
         /// <summary>
@@ -138,7 +136,8 @@ namespace Inventory.Service
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, DateTime>>(ActorMessageDictionaryName);
 
             IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>> requestHistory =
-                await this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
+                await
+                    this.StateManager.GetOrAddAsync<IReliableDictionary<CustomerOrderActorMessageId, Tuple<InventoryItemId, int>>>(RequestHistoryDictionaryName);
 
             int removed = 0;
 
@@ -262,7 +261,8 @@ namespace Inventory.Service
             {
                 ServiceEventSource.Current.Message("Generating item views for {0} items", await inventoryItems.GetCountAsync(tx));
 
-                var enumerator = (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+                IAsyncEnumerator<KeyValuePair<InventoryItemId, InventoryItem>> enumerator =
+                    (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
 
                 while (await enumerator.MoveNextAsync(ct))
                 {
@@ -294,6 +294,7 @@ namespace Inventory.Service
                 await tx.CommitAsync();
             }
         }
+
         /// <summary>
         /// Creates a new communication listener
         /// </summary>
@@ -379,10 +380,11 @@ namespace Inventory.Service
             ServiceEventSource.Current.ServiceMessage(this, "Inside backup callback for replica {0}|{1}", this.Context.PartitionId, this.Context.ReplicaId);
             long totalBackupCount;
 
-            IReliableDictionary<string, long> backupCountDictionary = await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>(BackupCountDictionaryName);
+            IReliableDictionary<string, long> backupCountDictionary =
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<string, long>>(BackupCountDictionaryName);
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                var value = await backupCountDictionary.TryGetValueAsync(tx, "backupCount");
+                ConditionalValue<long> value = await backupCountDictionary.TryGetValueAsync(tx, "backupCount");
 
                 if (!value.HasValue)
                 {
@@ -424,7 +426,8 @@ namespace Inventory.Service
             {
                 ServiceEventSource.Current.Message("Printing Inventory for {0} items:", await inventoryItems.GetCountAsync(tx));
 
-                var enumerator = (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+                IAsyncEnumerator<KeyValuePair<InventoryItemId, InventoryItem>> enumerator =
+                    (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
 
                 while (await enumerator.MoveNextAsync(cancellationToken))
                 {
@@ -446,7 +449,8 @@ namespace Inventory.Service
             {
                 using (ITransaction tx = this.StateManager.CreateTransaction())
                 {
-                    var enumerator = (await recentRequests.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+                    IAsyncEnumerator<KeyValuePair<CustomerOrderActorMessageId, DateTime>> enumerator =
+                        (await recentRequests.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
 
                     while (await enumerator.MoveNextAsync(cancellationToken))
                     {
@@ -482,11 +486,12 @@ namespace Inventory.Service
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Checking inventory stock for {0} items.", await inventoryItems.GetCountAsync(tx));
 
-                    var enumerator = (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
+                    IAsyncEnumerator<KeyValuePair<InventoryItemId, InventoryItem>> enumerator =
+                        (await inventoryItems.CreateEnumerableAsync(tx)).GetAsyncEnumerator();
 
                     while (await enumerator.MoveNextAsync(cancellationToken))
                     {
-                        var item = enumerator.Current.Value;
+                        InventoryItem item = enumerator.Current.Value;
 
                         //Check if stock is below restockThreshold and if the item is not already on reorder
                         if ((item.AvailableStock <= item.RestockThreshold) && !item.OnReorder)
@@ -502,10 +507,11 @@ namespace Inventory.Service
 
                     try
                     {
-
                         ServiceUriBuilder builder = new ServiceUriBuilder(RestockRequestManagerServiceName);
 
-                        IRestockRequestManager restockRequestManagerClient = ServiceProxy.Create<IRestockRequestManager>(builder.ToUri(), new ServicePartitionKey());
+                        IRestockRequestManager restockRequestManagerClient = ServiceProxy.Create<IRestockRequestManager>(
+                            builder.ToUri(),
+                            new ServicePartitionKey());
 
                         // we reduce the quantity passed in to RestockRequest to ensure we don't overorder   
                         RestockRequest newRequest = new RestockRequest(item.Id, (item.MaxStockThreshold - item.AvailableStock));
@@ -539,7 +545,6 @@ namespace Inventory.Service
                             "Restock order placed. Item ID: {0}. Quantity: {1}",
                             newRequest.ItemId,
                             newRequest.Quantity);
-
                     }
                     catch (Exception e)
                     {
@@ -554,7 +559,7 @@ namespace Inventory.Service
         private async Task PeriodicTakeBackupAsync(CancellationToken cancellationToken)
         {
             long backupsTaken = 0;
-            SetupBackupManager();
+            this.SetupBackupManager();
 
             while (true)
             {
@@ -581,15 +586,15 @@ namespace Inventory.Service
 
         private void SetupBackupManager()
         {
-            var partitionId = this.Context.PartitionId.ToString("N");
-            var minKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).LowKey;
-            var maxKey = ((Int64RangePartitionInformation)this.Partition.PartitionInfo).HighKey;
+            string partitionId = this.Context.PartitionId.ToString("N");
+            long minKey = ((Int64RangePartitionInformation) this.Partition.PartitionInfo).LowKey;
+            long maxKey = ((Int64RangePartitionInformation) this.Partition.PartitionInfo).HighKey;
 
             if (this.Context.CodePackageActivationContext != null)
             {
                 ICodePackageActivationContext codePackageContext = this.Context.CodePackageActivationContext;
-                var configPackage = codePackageContext.GetConfigurationPackageObject("Config");
-                var configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
+                ConfigurationPackage configPackage = codePackageContext.GetConfigurationPackageObject("Config");
+                ConfigurationSection configSection = configPackage.Settings.Sections["Inventory.Service.Settings"];
 
                 string backupSettingValue = configSection.Parameters["BackupMode"].Value;
 
@@ -601,7 +606,7 @@ namespace Inventory.Service
                 {
                     this.backupStorageType = BackupManagerType.Azure;
 
-                    var azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
+                    ConfigurationSection azureBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Azure"];
 
                     this.backupManager = new AzureBlobBackupManager(azureBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
                 }
@@ -609,7 +614,7 @@ namespace Inventory.Service
                 {
                     this.backupStorageType = BackupManagerType.Local;
 
-                    var localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
+                    ConfigurationSection localBackupConfigSection = configPackage.Settings.Sections["Inventory.Service.BackupSettings.Local"];
 
                     this.backupManager = new DiskBackupManager(localBackupConfigSection, partitionId, minKey, maxKey, codePackageContext.TempDirectory);
                 }

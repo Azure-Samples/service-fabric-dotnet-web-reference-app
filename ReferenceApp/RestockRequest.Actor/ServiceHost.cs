@@ -5,9 +5,9 @@
 
 namespace RestockRequest.Actor
 {
-    using Microsoft.ServiceFabric.Actors.Runtime;
     using System;
     using System.Threading;
+    using Microsoft.ServiceFabric.Actors.Runtime;
 
     public class ServiceHost
     {

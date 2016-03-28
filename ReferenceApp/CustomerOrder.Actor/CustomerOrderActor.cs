@@ -5,17 +5,18 @@
 
 namespace CustomerOrder.Actor
 {
-    using Common;
-    using CustomerOrder.Domain;
-    using Inventory.Domain;
-    using Microsoft.ServiceFabric.Actors;
-    using Microsoft.ServiceFabric.Actors.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Common;
+    using CustomerOrder.Domain;
+    using Inventory.Domain;
+    using Microsoft.ServiceFabric.Actors;
+    using Microsoft.ServiceFabric.Actors.Runtime;
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Services.Remoting.Client;
 
     internal class CustomerOrderActor : Actor, ICustomerOrderActor, IRemindable
     {
@@ -41,10 +42,10 @@ namespace CustomerOrder.Actor
                 await this.StateManager.SetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName, CustomerOrderStatus.Submitted);
 
                 await this.RegisterReminderAsync(
-                   CustomerOrderReminderNames.FulfillOrderReminder,
-                   null,
-                   TimeSpan.FromSeconds(10),
-                   TimeSpan.FromSeconds(10));
+                    CustomerOrderReminderNames.FulfillOrderReminder,
+                    null,
+                    TimeSpan.FromSeconds(10),
+                    TimeSpan.FromSeconds(10));
             }
             catch (Exception e)
             {
@@ -62,25 +63,7 @@ namespace CustomerOrder.Actor
         /// <returns></returns>
         public async Task<string> GetOrderStatusAsStringAsync()
         {
-            return (await GetOrderStatusAsync()).ToString();
-        }
-
-        private async Task<CustomerOrderStatus> GetOrderStatusAsync()
-        {
-            var orderStatusResult = await this.StateManager.TryGetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName);
-            if (orderStatusResult.HasValue)
-            {
-                return orderStatusResult.Value;
-            }
-            else
-            {
-                return CustomerOrderStatus.Unknown;
-            }
-        }
-
-        private async Task SetOrderStatusAsync(CustomerOrderStatus orderStatus)
-        {
-            await this.StateManager.SetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName, orderStatus);
+            return (await this.GetOrderStatusAsync()).ToString();
         }
 
         public async Task ReceiveReminderAsync(string reminderName, byte[] context, TimeSpan dueTime, TimeSpan period)
@@ -91,7 +74,7 @@ namespace CustomerOrder.Actor
 
                     await this.FulfillOrderAsync();
 
-                    var orderStatus = await GetOrderStatusAsync();
+                    CustomerOrderStatus orderStatus = await this.GetOrderStatusAsync();
 
                     if (orderStatus == CustomerOrderStatus.Shipped || orderStatus == CustomerOrderStatus.Canceled)
                     {
@@ -122,12 +105,12 @@ namespace CustomerOrder.Actor
             this.tokenSource.Dispose();
             return Task.FromResult(true);
         }
+
         protected override async Task OnActivateAsync()
         {
-
             this.tokenSource = new CancellationTokenSource();
 
-            var orderStatusResult = await this.GetOrderStatusAsync();
+            CustomerOrderStatus orderStatusResult = await this.GetOrderStatusAsync();
 
             if (orderStatusResult == CustomerOrderStatus.Unknown)
             {
@@ -159,7 +142,7 @@ namespace CustomerOrder.Actor
 
             await this.SetOrderStatusAsync(CustomerOrderStatus.InProcess);
 
-            var orderedItems = await this.StateManager.GetStateAsync<IList<CustomerOrderItem>>(OrderItemListPropertyName);
+            IList<CustomerOrderItem> orderedItems = await this.StateManager.GetStateAsync<IList<CustomerOrderItem>>(OrderItemListPropertyName);
 
             ActorEventSource.Current.ActorMessage(this, "Fullfilling customer order. ID: {0}. Items: {1}", this.Id.GetGuidId(), orderedItems.Count);
 
@@ -187,12 +170,14 @@ namespace CustomerOrder.Actor
                         inventoryService.RemoveStockAsync(
                             item.ItemId,
                             item.Quantity,
-                            new CustomerOrderActorMessageId(new ActorId(this.Id.GetGuidId()), await this.StateManager.GetStateAsync<long>(RequestIdPropertyName)));
+                            new CustomerOrderActorMessageId(
+                                new ActorId(this.Id.GetGuidId()),
+                                await this.StateManager.GetStateAsync<long>(RequestIdPropertyName)));
 
                 item.FulfillmentRemaining -= numberItemsRemoved;
             }
 
-            var items = await this.StateManager.GetStateAsync<IList<CustomerOrderItem>>(OrderItemListPropertyName);
+            IList<CustomerOrderItem> items = await this.StateManager.GetStateAsync<IList<CustomerOrderItem>>(OrderItemListPropertyName);
             bool backordered = false;
 
             // Set the status appropriately
@@ -221,8 +206,26 @@ namespace CustomerOrder.Actor
                 items.Count(x => x.FulfillmentRemaining == 0),
                 items.Count(x => x.FulfillmentRemaining > 0));
 
-            var messageRequestId = await this.StateManager.GetStateAsync<long>(RequestIdPropertyName);
+            long messageRequestId = await this.StateManager.GetStateAsync<long>(RequestIdPropertyName);
             await this.StateManager.SetStateAsync<long>(RequestIdPropertyName, ++messageRequestId);
+        }
+
+        private async Task<CustomerOrderStatus> GetOrderStatusAsync()
+        {
+            ConditionalValue<CustomerOrderStatus> orderStatusResult = await this.StateManager.TryGetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName);
+            if (orderStatusResult.HasValue)
+            {
+                return orderStatusResult.Value;
+            }
+            else
+            {
+                return CustomerOrderStatus.Unknown;
+            }
+        }
+
+        private async Task SetOrderStatusAsync(CustomerOrderStatus orderStatus)
+        {
+            await this.StateManager.SetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName, orderStatus);
         }
     }
 }

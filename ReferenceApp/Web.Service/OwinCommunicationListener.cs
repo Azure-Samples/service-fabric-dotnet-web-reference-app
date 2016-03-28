@@ -5,8 +5,6 @@
 
 namespace Web.Service
 {
-    using Microsoft.Owin.Hosting;
-    using Microsoft.ServiceFabric.Services.Communication.Runtime;
     using System;
     using System.Fabric;
     using System.Fabric.Description;
@@ -14,14 +12,16 @@ namespace Web.Service
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Owin.Hosting;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
 
     public class OwinCommunicationListener : ICommunicationListener
     {
         private readonly IOwinAppBuilder startup;
         private readonly string appRoot;
+        private readonly ServiceContext serviceContext;
         private IDisposable serverHandle;
         private string listeningAddress;
-        private readonly ServiceContext serviceContext;
 
         public OwinCommunicationListener(string appRoot, IOwinAppBuilder startup, ServiceContext serviceContext)
         {
@@ -32,18 +32,18 @@ namespace Web.Service
 
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
-            EndpointResourceDescription serviceEndpoint = serviceContext.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
+            EndpointResourceDescription serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
             int port = serviceEndpoint.Port;
             EndpointProtocol protocol = serviceEndpoint.Protocol;
 
             this.listeningAddress = String.Format(
-            CultureInfo.InvariantCulture,
-            "{0}://+:{1}/{2}",
-            protocol,
-            port,
-            String.IsNullOrWhiteSpace(this.appRoot)
-                ? String.Empty
-                : this.appRoot.TrimEnd('/') + '/');
+                CultureInfo.InvariantCulture,
+                "{0}://+:{1}/{2}",
+                protocol,
+                port,
+                String.IsNullOrWhiteSpace(this.appRoot)
+                    ? String.Empty
+                    : this.appRoot.TrimEnd('/') + '/');
 
             try
             {

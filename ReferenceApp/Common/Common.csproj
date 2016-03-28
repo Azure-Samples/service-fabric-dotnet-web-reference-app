@@ -75,7 +75,6 @@
   <ItemGroup>
     <Compile Include="ActorMessageId.cs" />
     <Compile Include="HashUtil.cs" />
-    <Compile Include="MockableActor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceUriBuilder.cs" />
   </ItemGroup>

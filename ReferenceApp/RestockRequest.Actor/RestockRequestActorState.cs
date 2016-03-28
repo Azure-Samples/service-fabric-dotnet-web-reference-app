@@ -5,9 +5,9 @@
 
 namespace RestockRequest.Actor
 {
-    using RestockRequest.Domain;
     using System;
     using System.Runtime.Serialization;
+    using RestockRequest.Domain;
 
     [DataContract]
     internal sealed class RestockRequestActorState

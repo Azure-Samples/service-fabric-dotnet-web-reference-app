@@ -5,10 +5,6 @@
 
 namespace Web.Service.Controllers
 {
-    using Common;
-    using Inventory.Domain;
-    using Microsoft.ServiceFabric.Services.Client;
-    using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
     using System.Fabric;
@@ -16,6 +12,10 @@ namespace Web.Service.Controllers
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web.Http;
+    using Common;
+    using Inventory.Domain;
+    using Microsoft.ServiceFabric.Services.Client;
+    using Microsoft.ServiceFabric.Services.Remoting.Client;
 
     public class StoreController : ApiController
     {
@@ -45,7 +45,7 @@ namespace Web.Service.Controllers
                 long minKey = (p.PartitionInformation as Int64RangePartitionInformation).LowKey;
                 IInventoryService inventoryServiceClient = ServiceProxy.Create<IInventoryService>(serviceName, new ServicePartitionKey(minKey));
 
-                var result = await inventoryServiceClient.GetCustomerInventoryAsync(CancellationToken.None);
+                IEnumerable<InventoryItemView> result = await inventoryServiceClient.GetCustomerInventoryAsync(CancellationToken.None);
                 if (result != null)
                 {
                     itemList.AddRange(result);

@@ -5,10 +5,10 @@
 
 namespace Web.Service
 {
-    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
     using System.Diagnostics;
     using System.Threading;
+    using Microsoft.ServiceFabric.Services.Runtime;
 
     public class Program
     {
@@ -21,7 +21,6 @@ namespace Web.Service
                 ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(WebService).Name);
 
                 Thread.Sleep(Timeout.Infinite);
-
             }
             catch (Exception e)
             {

@@ -5,9 +5,9 @@
 
 namespace RestockRequestManager.Service
 {
-    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
     using System.Threading;
+    using Microsoft.ServiceFabric.Services.Runtime;
 
     public class Program
     {
@@ -15,10 +15,11 @@ namespace RestockRequestManager.Service
         {
             try
             {
-                ServiceRuntime.RegisterServiceAsync("RestockRequestManagerServiceType", (context) => new RestockRequestManagerService(context)).GetAwaiter().GetResult();
+                ServiceRuntime.RegisterServiceAsync("RestockRequestManagerServiceType", (context) => new RestockRequestManagerService(context))
+                    .GetAwaiter()
+                    .GetResult();
 
                 Thread.Sleep(Timeout.Infinite);
-
             }
             catch (Exception e)
             {

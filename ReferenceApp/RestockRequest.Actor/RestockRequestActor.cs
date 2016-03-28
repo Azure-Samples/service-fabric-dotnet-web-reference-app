@@ -5,11 +5,12 @@
 
 namespace RestockRequest.Actor
 {
-    using Microsoft.ServiceFabric.Actors.Runtime;
-    using RestockRequest.Domain;
     using System;
     using System.Fabric;
     using System.Threading.Tasks;
+    using Microsoft.ServiceFabric.Actors.Runtime;
+    using Microsoft.ServiceFabric.Data;
+    using RestockRequest.Domain;
 
     //internal class RestockRequestActor : StatefulActor<RestockRequestActorState>, IRestockRequestActor, IRemindable
     internal class RestockRequestActor : Actor, IRestockRequestActor, IRemindable
@@ -43,7 +44,7 @@ namespace RestockRequest.Actor
         /// <returns></returns>
         public async Task AddRestockRequestAsync(RestockRequest request)
         {
-            var state = await this.StateManager.GetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
+            RestockRequestActorState state = await this.StateManager.GetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
 
             if (state.IsStarted()) //Don't accept a request that is already started
             {
@@ -73,7 +74,7 @@ namespace RestockRequest.Actor
 
         protected override async Task OnActivateAsync()
         {
-            var state = await this.StateManager.TryGetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
+            ConditionalValue<RestockRequestActorState> state = await this.StateManager.TryGetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
 
             if (!state.HasValue)
             {
@@ -91,7 +92,7 @@ namespace RestockRequest.Actor
         /// <returns></returns>
         internal async Task RestockPipeline()
         {
-            var state = await this.StateManager.GetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
+            RestockRequestActorState state = await this.StateManager.GetStateAsync<RestockRequestActorState>(ActorStatePropertyName);
 
             ActorEventSource.Current.ActorMessage(this, "RestockRequestActor: {0}: Pipeline change reminder", state);
 
@@ -117,7 +118,6 @@ namespace RestockRequest.Actor
 
                 default:
                     throw new InvalidOperationException(string.Format("{0}: remainder received in invalid status", state));
-
             }
 
             await this.StateManager.SetStateAsync<RestockRequestActorState>(ActorStatePropertyName, state);

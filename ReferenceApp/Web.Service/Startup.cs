@@ -5,11 +5,11 @@
 
 namespace Web.Service
 {
+    using System.Web.Http;
     using Microsoft.Owin;
     using Microsoft.Owin.FileSystems;
     using Microsoft.Owin.StaticFiles;
     using Owin;
-    using System.Web.Http;
 
     internal class Startup : IOwinAppBuilder
     {
@@ -23,7 +23,7 @@ namespace Web.Service
             fileOptions.EnableDefaultFiles = true;
             fileOptions.RequestPath = PathString.Empty;
             fileOptions.FileSystem = physicalFileSystem;
-            fileOptions.DefaultFilesOptions.DefaultFileNames = new[] { "index.html" };
+            fileOptions.DefaultFilesOptions.DefaultFileNames = new[] {"index.html"};
             fileOptions.StaticFileOptions.FileSystem = fileOptions.FileSystem = physicalFileSystem;
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
             fileOptions.EnableDirectoryBrowsing = true;

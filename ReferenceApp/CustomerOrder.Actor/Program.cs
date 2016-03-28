@@ -5,9 +5,9 @@
 
 namespace CustomerOrder.Actor
 {
-    using Microsoft.ServiceFabric.Actors.Runtime;
     using System;
     using System.Threading;
+    using Microsoft.ServiceFabric.Actors.Runtime;
 
     public class Program
     {
@@ -17,7 +17,6 @@ namespace CustomerOrder.Actor
             {
                 ActorRuntime.RegisterActorAsync<CustomerOrderActor>();
                 Thread.Sleep(Timeout.Infinite);
-
             }
             catch (Exception e)
             {

@@ -5,10 +5,10 @@
 
 namespace Web.Service
 {
-    using Microsoft.ServiceFabric.Services.Communication.Runtime;
-    using Microsoft.ServiceFabric.Services.Runtime;
     using System.Collections.Generic;
     using System.Fabric;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
+    using Microsoft.ServiceFabric.Services.Runtime;
 
     internal class WebService : StatelessService
     {
@@ -18,12 +18,12 @@ namespace Web.Service
 
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            return new List<ServiceInstanceListener>() {
+            return new List<ServiceInstanceListener>()
+            {
                 new ServiceInstanceListener(
                     (initParams) =>
-                       new OwinCommunicationListener("fabrikam", new Startup(), this.Context))
-                       };
+                        new OwinCommunicationListener("fabrikam", new Startup(), this.Context))
+            };
         }
-
     }
 }

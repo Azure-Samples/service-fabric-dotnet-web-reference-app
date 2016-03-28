@@ -1,73 +1,37 @@
-﻿using System;
-using System.Fabric;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace Inventory.Service
 {
+    using System;
+    using System.Fabric;
+
     internal class StatefulServiceParameters
     {
-        private CodePackageActivationContext codePackageActivationContext;
-        private byte[] initializationData;
-        private Guid partitionId;
-        private long replicaId;
-        private Uri serviceName;
-        private string serviceTypeName;
-
-        public StatefulServiceParameters(CodePackageActivationContext codePackageActivationContext, byte[] initializationData, Guid partitionId, Uri serviceName, string serviceTypeName, long replicaId)
+        public StatefulServiceParameters(
+            CodePackageActivationContext codePackageActivationContext, byte[] initializationData, Guid partitionId, Uri serviceName, string serviceTypeName,
+            long replicaId)
         {
-            this.codePackageActivationContext = codePackageActivationContext;
-            this.initializationData = initializationData;
-            this.partitionId = partitionId;
-            this.serviceName = serviceName;
-            this.serviceTypeName = serviceTypeName;
-            this.replicaId = replicaId;
+            this.CodePackageActivationContext = codePackageActivationContext;
+            this.InitializationData = initializationData;
+            this.PartitionId = partitionId;
+            this.ServiceName = serviceName;
+            this.ServiceTypeName = serviceTypeName;
+            this.ReplicaId = replicaId;
         }
 
-        public CodePackageActivationContext CodePackageActivationContext
-        {
-            get
-            {
-                return codePackageActivationContext;
-            }
-        }
+        public CodePackageActivationContext CodePackageActivationContext { get; }
 
-        public byte[] InitializationData
-        {
-            get
-            {
-                return initializationData;
-            }
-        }
+        public byte[] InitializationData { get; }
 
-        public Guid PartitionId
-        {
-            get
-            {
-                return partitionId;
-            }
-        }
+        public Guid PartitionId { get; }
 
-        public long ReplicaId
-        {
-            get
-            {
-                return replicaId;
-            }
-        }
+        public long ReplicaId { get; }
 
-        public Uri ServiceName
-        {
-            get
-            {
-                return serviceName;
-            }
-        }
+        public Uri ServiceName { get; }
 
-        public string ServiceTypeName
-        {
-            get
-            {
-                return serviceTypeName;
-            }
-        }
+        public string ServiceTypeName { get; }
     }
 }

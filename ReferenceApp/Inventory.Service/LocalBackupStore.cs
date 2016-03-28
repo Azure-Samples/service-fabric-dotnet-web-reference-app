@@ -5,14 +5,15 @@
 
 namespace Inventory.Service
 {
-    using Microsoft.ServiceFabric.Data;
     using System;
+    using System.Collections.Generic;
     using System.Fabric.Description;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.ServiceFabric.Data;
 
     public class DiskBackupManager : IBackupStore
     {
@@ -22,14 +23,6 @@ namespace Inventory.Service
         private int MaxBackupsToKeep;
         private long keyMin;
         private long keyMax;
-
-        long IBackupStore.backupFrequencyInSeconds
-        {
-            get
-            {
-                return this.backupFrequencyInSeconds;
-            }
-        }
 
         public DiskBackupManager(ConfigurationSection configSection, string partitionId, long keymin, long keymax, string codePackageTempDirectory)
         {
@@ -51,9 +44,16 @@ namespace Inventory.Service
                 this.MaxBackupsToKeep);
         }
 
+        long IBackupStore.backupFrequencyInSeconds
+        {
+            get { return this.backupFrequencyInSeconds; }
+        }
+
         public Task ArchiveBackupAsync(BackupInfo backupInfo, CancellationToken cancellationToken)
         {
-            string fullArchiveDirectory = Path.Combine(this.PartitionArchiveFolder, string.Format("{0}_{1}_{2}", Guid.NewGuid().ToString("N"), this.keyMin, this.keyMax));
+            string fullArchiveDirectory = Path.Combine(
+                this.PartitionArchiveFolder,
+                string.Format("{0}_{1}_{2}", Guid.NewGuid().ToString("N"), this.keyMin, this.keyMax));
 
             DirectoryInfo dirInfo = new DirectoryInfo(fullArchiveDirectory);
             dirInfo.Create();
@@ -93,32 +93,36 @@ namespace Inventory.Service
             ServiceEventSource.Current.Message("Zip backup {0} extracted to {1}", zipPath, this.PartitionTempDirectory);
 
             return Task.FromResult<string>(this.PartitionTempDirectory);
-
         }
 
         public async Task DeleteBackupsAsync(CancellationToken cancellationToken)
         {
-            ServiceEventSource.Current.Message("deleting old backups");
+            await Task.Run(
+                () =>
+                {
+                    ServiceEventSource.Current.Message("deleting old backups");
 
-            if (!Directory.Exists(this.PartitionArchiveFolder))
-            {
-                //Nothing to delete; Backups may not even have been created for the partition
-                return;
-            }
+                    if (!Directory.Exists(this.PartitionArchiveFolder))
+                    {
+                        //Nothing to delete; Backups may not even have been created for the partition
+                        return;
+                    }
 
-            DirectoryInfo dirInfo = new DirectoryInfo(this.PartitionArchiveFolder);
+                    DirectoryInfo dirInfo = new DirectoryInfo(this.PartitionArchiveFolder);
 
-            var oldBackups = dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime).Skip(this.MaxBackupsToKeep);
+                    IEnumerable<DirectoryInfo> oldBackups = dirInfo.GetDirectories().OrderByDescending(x => x.LastWriteTime).Skip(this.MaxBackupsToKeep);
 
-            foreach (DirectoryInfo oldBackup in oldBackups)
-            {
-                ServiceEventSource.Current.Message("Deleting old backup {0}", oldBackup.FullName);
-                oldBackup.Delete(true);
-            }
+                    foreach (DirectoryInfo oldBackup in oldBackups)
+                    {
+                        ServiceEventSource.Current.Message("Deleting old backup {0}", oldBackup.FullName);
+                        oldBackup.Delete(true);
+                    }
 
-            ServiceEventSource.Current.Message("Old backups deleted");
+                    ServiceEventSource.Current.Message("Old backups deleted");
 
-            return;
+                    return;
+                },
+                cancellationToken);
         }
     }
 }

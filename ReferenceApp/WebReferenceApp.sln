@@ -32,15 +32,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequestManager.Servi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{9EC0063F-489E-43FE-94B5-BF5F89977CD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequest.Tests", "RestockRequest.Tests\RestockRequest.Tests.csproj", "{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.Tests", "CustomerOrder.Tests\CustomerOrder.Tests.csproj", "{A598E305-52E9-4E60-B7B1-98C1BFAA7165}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequestManager.Domain", "RestockRequestManager.Domain\RestockRequestManager.Domain.csproj", "{4162F266-D657-4143-AA62-626C10D23561}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.Domain", "Inventory.Domain\Inventory.Domain.csproj", "{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mocks", "Mocks\Mocks.csproj", "{00E00484-BD00-40CD-B2CC-1CFA8E893972}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -86,14 +80,6 @@ Global
 		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Debug|x64.Build.0 = Debug|x64
 		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Release|x64.ActiveCfg = Release|x64
 		{9EC0063F-489E-43FE-94B5-BF5F89977CD3}.Release|x64.Build.0 = Release|x64
-		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Debug|x64.ActiveCfg = Debug|x64
-		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Debug|x64.Build.0 = Debug|x64
-		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Release|x64.ActiveCfg = Release|x64
-		{A936D94B-BEBC-4BCF-A906-D8DD5FFCBC96}.Release|x64.Build.0 = Release|x64
-		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Debug|x64.ActiveCfg = Debug|x64
-		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Debug|x64.Build.0 = Debug|x64
-		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Release|x64.ActiveCfg = Release|x64
-		{A598E305-52E9-4E60-B7B1-98C1BFAA7165}.Release|x64.Build.0 = Release|x64
 		{4162F266-D657-4143-AA62-626C10D23561}.Debug|x64.ActiveCfg = Debug|x64
 		{4162F266-D657-4143-AA62-626C10D23561}.Debug|x64.Build.0 = Debug|x64
 		{4162F266-D657-4143-AA62-626C10D23561}.Release|x64.ActiveCfg = Release|x64
@@ -102,10 +88,6 @@ Global
 		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Debug|x64.Build.0 = Debug|x64
 		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Release|x64.ActiveCfg = Release|x64
 		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Release|x64.Build.0 = Release|x64
-		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Debug|x64.ActiveCfg = Debug|x64
-		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Debug|x64.Build.0 = Debug|x64
-		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Release|x64.ActiveCfg = Release|x64
-		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
