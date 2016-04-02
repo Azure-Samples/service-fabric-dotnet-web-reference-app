@@ -58,7 +58,7 @@ In the publish dialog box, select the Cloud profile and a connection endpoint. S
 ```
 
 ## Unit Tests
-This application contains also unit tests to show the recommended pattern  to create tests against a Service Fabric application. 
+This application also contains unit tests to show the recommended pattern  to create tests against a Service Fabric application. 
   Below are the steps  to run or debug a test (using  Visual studio 2015 on a 64 bit windows):
   - Open the WebReferenceApp solution  in Visual studio 2015
   - Select menus "Test" / "Test Setting" / "Default processor architecture" -> x64
