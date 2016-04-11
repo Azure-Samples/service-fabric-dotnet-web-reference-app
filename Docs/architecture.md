@@ -10,7 +10,7 @@ The application is composed of individual services to perform the major function
 	- A stateful service that maintains the store's inventory. This service is partitioned, where each partition of the service holds a subset of the store's entire inventory. With a large number of partitions, this service can scale out to meet data capacity and inventory request throughput.
 - RestockRequest Actor
 	- A stateful actor that manages the lifetime of a restock request from the inventory service. Each time the inventory runs low on stock for an item, makes a request to refill the inventory. The restock request actor itself would send a request to a supplier for more items, however this is simply simulated within the actor.
-- RequestRequest Manager
+- RestockRequest Manager
 	- This is a stateful service that manages requests from the inventory service for item restocking. It logs restock requests made by the Inventory Service and activates a RestockRequest Actor to fulfill the requst. It then receives notifications from the actors when a restock request has been fulfilled. These notifications are placed in a ReliableQueue as they come in. The notifications are periodically dequeued and sent back to the Inventory Service.
 
 # Data flow
