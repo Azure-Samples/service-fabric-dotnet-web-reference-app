@@ -51,7 +51,7 @@ namespace Web.Service
             }
             catch (TargetInvocationException tie)
             {
-                ServiceEventSource.Current.Message("TargetIncationException during open, {0}", tie);
+                ServiceEventSource.Current.Message("TargetInvocationException during open, {0}", tie);
                 throw;
             }
             catch (Exception e)
