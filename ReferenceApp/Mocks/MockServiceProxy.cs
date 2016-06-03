@@ -5,13 +5,14 @@
 
 namespace Mocks
 {
+    using Common.Wrappers;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
 
-    public class MockServiceProxy : IServiceProxy
+    public class MockServiceProxy : IServiceProxyWrapper
     {
         private IDictionary<Type, Func<Uri, object>> createFunctions = new Dictionary<Type, Func<Uri, object>>();
 

@@ -17,13 +17,35 @@ namespace CustomerOrder.Actor
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using Common.Wrappers;
+    using Mocks;
 
-    internal class CustomerOrderActor : Actor, ICustomerOrderActor, IRemindable
+    internal class CustomerOrderActor : MockableActor, ICustomerOrderActor, IRemindable
     {
         private const string InventoryServiceName = "InventoryService";
         private const string OrderItemListPropertyName = "OrderList";
         private const string OrderStatusPropertyName = "CustomerOrderStatus";
         private const string RequestIdPropertyName = "RequestId";
+        private readonly IServiceProxyWrapper proxy;
+
+        public CustomerOrderActor()
+        {
+            this.proxy = new ServiceProxyWrapper();
+            this.tokenSource = new CancellationTokenSource();
+        }
+
+        public CustomerOrderActor(IServiceProxyWrapper proxy)
+        {
+            this.proxy = proxy;
+            this.tokenSource = new CancellationTokenSource();
+        }
+
+        public CustomerOrderActor(IServiceProxyWrapper proxy, IActorStateManager stateManager)
+        {
+            this.proxy = proxy;
+            this.StateManager = stateManager;
+            this.tokenSource = new CancellationTokenSource();
+        }
 
         private CancellationTokenSource tokenSource = null;
 
@@ -108,8 +130,6 @@ namespace CustomerOrder.Actor
 
         protected override async Task OnActivateAsync()
         {
-            this.tokenSource = new CancellationTokenSource();
-
             CustomerOrderStatus orderStatusResult = await this.GetOrderStatusAsync();
 
             if (orderStatusResult == CustomerOrderStatus.Unknown)
@@ -155,7 +175,7 @@ namespace CustomerOrder.Actor
             //For every item that cannot be fulfilled, we add to backordered. 
             foreach (CustomerOrderItem item in orderedItems.Where(x => x.FulfillmentRemaining > 0))
             {
-                IInventoryService inventoryService = ServiceProxy.Create<IInventoryService>(builder.ToUri(), item.ItemId.GetPartitionKey());
+                IInventoryService inventoryService = this.proxy.Create<IInventoryService>(builder.ToUri(), item.ItemId.GetPartitionKey());
 
                 //First, check the item is listed in inventory.  
                 //This will avoid infinite backorder status.

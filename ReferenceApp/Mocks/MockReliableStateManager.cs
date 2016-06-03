@@ -18,6 +18,7 @@ namespace Mocks
     public class MockReliableStateManager : IReliableStateManagerReplica
     {
         private ConcurrentDictionary<Uri, IReliableState> store = new ConcurrentDictionary<Uri, IReliableState>();
+        private Func<CancellationToken, Task<bool>> datalossFunction;
 
         private Dictionary<Type, Type> dependencyMap = new Dictionary<Type, Type>()
         {
@@ -29,7 +30,12 @@ namespace Mocks
         {
             set
             {
-                throw new NotImplementedException();
+                this.datalossFunction = value;
+            }
+
+            get
+            {
+                return this.datalossFunction;
             }
         }
 

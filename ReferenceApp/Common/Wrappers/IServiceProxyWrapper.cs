@@ -7,7 +7,7 @@ namespace Common.Wrappers
 {
     using System;
     using Microsoft.ServiceFabric.Services.Remoting;
-
+    using Microsoft.ServiceFabric.Services.Client;
     /// <summary>
     /// Interface to wrap the static ServiceProxy methods so we can inject any implementation into components that
     /// need ServiceProxy. This way we can inject a mock for unit testing.
@@ -15,7 +15,6 @@ namespace Common.Wrappers
     public interface IServiceProxyWrapper
     {
         TServiceInterface Create<TServiceInterface>(Uri serviceName) where TServiceInterface : IService;
-        TServiceInterface Create<TServiceInterface>(string partitionKey, Uri serviceName) where TServiceInterface : IService;
-        TServiceInterface Create<TServiceInterface>(long partitionKey, Uri serviceName) where TServiceInterface : IService;
+        TServiceInterface Create<TServiceInterface>(Uri serviceName, ServicePartitionKey partitionKey) where TServiceInterface : IService;
     }
 }

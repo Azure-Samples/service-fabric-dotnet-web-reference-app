@@ -73,6 +73,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MockableActor.cs" />
+    <Compile Include="MockActorStateManager.cs" />
     <Compile Include="MockAsyncEnumerable.cs" />
     <Compile Include="MockCodePackageActivationContext.cs" />
     <Compile Include="MockInventoryService.cs" />

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "WebReferenceApplication", "WebReferenceApplication\WebReferenceApplication.sfproj", "{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -35,6 +35,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestockRequestManager.Domain", "RestockRequestManager.Domain\RestockRequestManager.Domain.csproj", "{4162F266-D657-4143-AA62-626C10D23561}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.Domain", "Inventory.Domain\Inventory.Domain.csproj", "{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inventory.UnitTests", "Inventory.UnitTests\Inventory.UnitTests.csproj", "{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mocks", "Mocks\Mocks.csproj", "{00E00484-BD00-40CD-B2CC-1CFA8E893972}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.UnitTests", "CustomerOrder.UnitTests\CustomerOrder.UnitTests.csproj", "{226B8D34-99CF-4172-87DC-E20B39030CC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -88,6 +94,18 @@ Global
 		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Debug|x64.Build.0 = Debug|x64
 		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Release|x64.ActiveCfg = Release|x64
 		{7E9C2DFD-71A5-496D-AA4D-5EC53EAEB9AE}.Release|x64.Build.0 = Release|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Debug|x64.ActiveCfg = Debug|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Debug|x64.Build.0 = Debug|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Release|x64.ActiveCfg = Release|x64
+		{71E58E09-BEE4-4B19-BCF7-4C9BD71514FB}.Release|x64.Build.0 = Release|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Debug|x64.ActiveCfg = Debug|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Debug|x64.Build.0 = Debug|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Release|x64.ActiveCfg = Release|x64
+		{00E00484-BD00-40CD-B2CC-1CFA8E893972}.Release|x64.Build.0 = Release|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Debug|x64.ActiveCfg = Debug|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Debug|x64.Build.0 = Debug|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Release|x64.ActiveCfg = Release|x64
+		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

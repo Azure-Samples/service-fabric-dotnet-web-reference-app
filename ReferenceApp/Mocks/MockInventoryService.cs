@@ -60,7 +60,7 @@ namespace Mocks
 
         public Task<bool> IsItemInInventoryAsync(InventoryItemId itemId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return this.IsItemInInventoryAsyncFunc(itemId);
         }
 
         public Task<int> RemoveStockAsync(InventoryItemId itemId, int quantity, CustomerOrderActorMessageId amId)
