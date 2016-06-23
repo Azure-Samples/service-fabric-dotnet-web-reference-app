@@ -8,7 +8,7 @@ namespace Common.Wrappers
     using System;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
-
+    using Microsoft.ServiceFabric.Services.Client;
     /// <summary>
     /// Wrapper class for the static ServiceProxy.
     /// </summary>
@@ -16,17 +16,13 @@ namespace Common.Wrappers
     {
         public TServiceInterface Create<TServiceInterface>(Uri serviceName) where TServiceInterface : IService
         {
+
             return ServiceProxy.Create<TServiceInterface>(serviceName);
         }
 
-        public TServiceInterface Create<TServiceInterface>(long partitionKey, Uri serviceName) where TServiceInterface : IService
+        public TServiceInterface Create<TServiceInterface>(Uri serviceName, ServicePartitionKey partitionKey) where TServiceInterface : IService
         {
-            return ServiceProxy.Create<TServiceInterface>(partitionKey, serviceName);
-        }
-
-        public TServiceInterface Create<TServiceInterface>(string partitionKey, Uri serviceName) where TServiceInterface : IService
-        {
-            return ServiceProxy.Create<TServiceInterface>(partitionKey, serviceName);
+            return ServiceProxy.Create<TServiceInterface>(serviceName, partitionKey);
         }
     }
 }
