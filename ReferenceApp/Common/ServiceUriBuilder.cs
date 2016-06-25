@@ -12,11 +12,19 @@ namespace Common
     {
         public ServiceUriBuilder(string serviceInstance)
         {
+            this.ActivationContext = FabricRuntime.GetActivationContext();
             this.ServiceInstance = serviceInstance;
         }
 
-        public ServiceUriBuilder(string applicationInstance, string serviceInstance)
+        public ServiceUriBuilder(ICodePackageActivationContext context, string serviceInstance)
         {
+            this.ActivationContext = context;
+            this.ServiceInstance = serviceInstance;
+        }
+
+        public ServiceUriBuilder(ICodePackageActivationContext context, string applicationInstance, string serviceInstance)
+        {
+            this.ActivationContext = context;
             this.ApplicationInstance = applicationInstance;
             this.ServiceInstance = serviceInstance;
         }
@@ -31,22 +39,19 @@ namespace Common
         /// </summary>
         public string ServiceInstance { get; set; }
 
+        /// <summary>
+        /// The local activation context
+        /// </summary>
+        public ICodePackageActivationContext ActivationContext { get; set; }
+
         public Uri ToUri()
         {
             string applicationInstance = this.ApplicationInstance;
 
             if (String.IsNullOrEmpty(applicationInstance))
             {
-                try
-                {
-                    // the ApplicationName property here automatically prepends "fabric:/" for us
-                    applicationInstance = FabricRuntime.GetActivationContext().ApplicationName.Replace("fabric:/", String.Empty);
-                }
-                catch (InvalidOperationException)
-                {
-                    // FabricRuntime is not available. 
-                    // This indicates that this is being called from somewhere outside the Service Fabric cluster.
-                }
+                // the ApplicationName property here automatically prepends "fabric:/" for us
+                applicationInstance = this.ActivationContext.ApplicationName.Replace("fabric:/", String.Empty);
             }
 
             return new Uri("fabric:/" + applicationInstance + "/" + this.ServiceInstance);

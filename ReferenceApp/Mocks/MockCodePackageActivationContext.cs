@@ -6,7 +6,7 @@
     using System.Collections.ObjectModel;
     using System.Fabric;
     using System.Fabric.Description;
-
+    using System.Fabric.Health;
     public class MockCodePackageActivationContext : ICodePackageActivationContext
     {
         public string ApplicationName { get; private set; }
@@ -103,6 +103,23 @@
         {
             throw new NotImplementedException();
         }
+
+        public void ReportApplicationHealth(HealthInformation healthInformation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportDeployedServicePackageHealth(HealthInformation healthInformation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportDeployedApplicationHealth(HealthInformation healthInformation)
+        {
+            throw new NotImplementedException();
+        }
+
+
 
         public MockCodePackageActivationContext(
             string ApplicationName,

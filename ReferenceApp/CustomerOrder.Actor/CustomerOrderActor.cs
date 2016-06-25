@@ -17,32 +17,28 @@ namespace CustomerOrder.Actor
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
-    using Common.Wrappers;
     using Mocks;
-
+    using System.Fabric;
     internal class CustomerOrderActor : MockableActor, ICustomerOrderActor, IRemindable
     {
         private const string InventoryServiceName = "InventoryService";
         private const string OrderItemListPropertyName = "OrderList";
         private const string OrderStatusPropertyName = "CustomerOrderStatus";
         private const string RequestIdPropertyName = "RequestId";
-        private readonly IServiceProxyWrapper proxy;
+        private readonly IServiceProxyFactory ServiceProxyFactory;
+        private readonly ServiceUriBuilder builder;
 
         public CustomerOrderActor()
         {
-            this.proxy = new ServiceProxyWrapper();
+            this.builder = new ServiceUriBuilder(this.ActorService.Context.CodePackageActivationContext, InventoryServiceName);
+            this.ServiceProxyFactory = new ServiceProxyFactory();
             this.tokenSource = new CancellationTokenSource();
         }
-
-        public CustomerOrderActor(IServiceProxyWrapper proxy)
+        
+        public CustomerOrderActor(ICodePackageActivationContext context, IServiceProxyFactory proxyFactory, IActorStateManager stateManager)
         {
-            this.proxy = proxy;
-            this.tokenSource = new CancellationTokenSource();
-        }
-
-        public CustomerOrderActor(IServiceProxyWrapper proxy, IActorStateManager stateManager)
-        {
-            this.proxy = proxy;
+            this.builder = new ServiceUriBuilder(context, InventoryServiceName);
+            this.ServiceProxyFactory = proxyFactory;
             this.StateManager = stateManager;
             this.tokenSource = new CancellationTokenSource();
         }
@@ -121,13 +117,6 @@ namespace CustomerOrder.Actor
         /// state was already set to this. 
         /// </summary>
         /// 
-        protected override Task OnDeactivateAsync()
-        {
-            this.tokenSource.Cancel();
-            this.tokenSource.Dispose();
-            return Task.FromResult(true);
-        }
-
         protected override async Task OnActivateAsync()
         {
             CustomerOrderStatus orderStatusResult = await this.GetOrderStatusAsync();
@@ -140,6 +129,17 @@ namespace CustomerOrder.Actor
             }
 
             return;
+        }
+
+        /// <summary>
+        /// Deactivates the actor object
+        /// </summary>
+        /// <returns></returns>
+        protected override Task OnDeactivateAsync()
+        {
+            this.tokenSource.Cancel();
+            this.tokenSource.Dispose();
+            return Task.FromResult(true);
         }
 
         /// <summary>
@@ -157,8 +157,7 @@ namespace CustomerOrder.Actor
         /// </summary>
         /// <returns>The number of items put on backorder after fulfilling the order.</returns>
         internal async Task FulfillOrderAsync()
-        {
-            ServiceUriBuilder builder = new ServiceUriBuilder(InventoryServiceName);
+        {   
 
             await this.SetOrderStatusAsync(CustomerOrderStatus.InProcess);
 
@@ -175,7 +174,7 @@ namespace CustomerOrder.Actor
             //For every item that cannot be fulfilled, we add to backordered. 
             foreach (CustomerOrderItem item in orderedItems.Where(x => x.FulfillmentRemaining > 0))
             {
-                IInventoryService inventoryService = this.proxy.Create<IInventoryService>(builder.ToUri(), item.ItemId.GetPartitionKey());
+                IInventoryService inventoryService = this.ServiceProxyFactory.CreateServiceProxy<IInventoryService>(this.builder.ToUri(), item.ItemId.GetPartitionKey());
 
                 //First, check the item is listed in inventory.  
                 //This will avoid infinite backorder status.
