@@ -72,3 +72,7 @@ This application also contains unit tests to show the recommended pattern  to cr
 ## Next steps
 
 - [Learn about the application architecture and data flow.](https://github.com/Azure-Samples/service-fabric-dotnet-web-reference-app/blob/master/Docs/architecture.md "Learn about the application architecture and data flow.")
+
+
+## MSFT OSS Code Of Conduct Notice
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
