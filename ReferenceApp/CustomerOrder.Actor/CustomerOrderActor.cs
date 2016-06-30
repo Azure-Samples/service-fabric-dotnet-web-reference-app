@@ -5,11 +5,6 @@
 
 namespace CustomerOrder.Actor
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Common;
     using CustomerOrder.Domain;
     using Inventory.Domain;
@@ -18,32 +13,22 @@ namespace CustomerOrder.Actor
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using Mocks;
+    using System;
+    using System.Collections.Generic;
     using System.Fabric;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     internal class CustomerOrderActor : MockableActor, ICustomerOrderActor, IRemindable
     {
         private const string InventoryServiceName = "InventoryService";
         private const string OrderItemListPropertyName = "OrderList";
         private const string OrderStatusPropertyName = "CustomerOrderStatus";
         private const string RequestIdPropertyName = "RequestId";
-        private readonly IServiceProxyFactory ServiceProxyFactory;
-        private readonly ServiceUriBuilder builder;
-
-        public CustomerOrderActor()
-        {
-            this.builder = new ServiceUriBuilder(this.ActorService.Context.CodePackageActivationContext, InventoryServiceName);
-            this.ServiceProxyFactory = new ServiceProxyFactory();
-            this.tokenSource = new CancellationTokenSource();
-        }
-        
-        public CustomerOrderActor(ICodePackageActivationContext context, IServiceProxyFactory proxyFactory, IActorStateManager stateManager)
-        {
-            this.builder = new ServiceUriBuilder(context, InventoryServiceName);
-            this.ServiceProxyFactory = proxyFactory;
-            this.StateManager = stateManager;
-            this.tokenSource = new CancellationTokenSource();
-        }
-
+        private IServiceProxyFactory ServiceProxyFactory;
+        private ServiceUriBuilder builder;
         private CancellationTokenSource tokenSource = null;
+
 
         /// <summary>
         /// This method accepts a list of CustomerOrderItems, representing a customer order, and sets the actor's state
@@ -119,6 +104,8 @@ namespace CustomerOrder.Actor
         /// 
         protected override async Task OnActivateAsync()
         {
+            await InternalActivateAsync(this.ActorService.Context.CodePackageActivationContext, new ServiceProxyFactory());
+
             CustomerOrderStatus orderStatusResult = await this.GetOrderStatusAsync();
 
             if (orderStatusResult == CustomerOrderStatus.Unknown)
@@ -129,6 +116,21 @@ namespace CustomerOrder.Actor
             }
 
             return;
+        }
+
+        /// <summary>
+        /// Adding this method to support DI/Testing 
+        /// We need to do some work to create the actor object and make sure it is constructed completely
+        /// In local testing we can inject the components we need, but in a real cluster
+        /// those items are not established until the actor object is activated. Thus we need to 
+        /// have this method so that the tests can have the same init path as the actor would in prod
+        /// </summary>
+        /// <returns></returns>
+        public async Task InternalActivateAsync(ICodePackageActivationContext context, IServiceProxyFactory proxyFactory)
+        {
+            this.tokenSource = new CancellationTokenSource();
+            this.builder = new ServiceUriBuilder(context, InventoryServiceName);
+            this.ServiceProxyFactory = proxyFactory;
         }
 
         /// <summary>
@@ -157,7 +159,7 @@ namespace CustomerOrder.Actor
         /// </summary>
         /// <returns>The number of items put on backorder after fulfilling the order.</returns>
         internal async Task FulfillOrderAsync()
-        {   
+        {
 
             await this.SetOrderStatusAsync(CustomerOrderStatus.InProcess);
 
