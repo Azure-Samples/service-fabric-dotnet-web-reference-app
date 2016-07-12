@@ -79,5 +79,10 @@ namespace Mocks
         {
             throw new NotImplementedException();
         }
+
+        public Task ClearCacheAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
     }
 }

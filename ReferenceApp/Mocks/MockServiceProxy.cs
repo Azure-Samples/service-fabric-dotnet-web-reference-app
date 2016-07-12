@@ -5,14 +5,14 @@
 
 namespace Mocks
 {
-    using Common.Wrappers;
     using Microsoft.ServiceFabric.Services.Client;
+    using Microsoft.ServiceFabric.Services.Communication.Client;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using System;
     using System.Collections.Generic;
 
-    public class MockServiceProxy : IServiceProxyWrapper
+    public class MockServiceProxy : IServiceProxy
     {
         private IDictionary<Type, Func<Uri, object>> createFunctions = new Dictionary<Type, Func<Uri, object>>();
 
@@ -26,9 +26,14 @@ namespace Mocks
             return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceName);
         }
 
-        public TServiceInterface Create<TServiceInterface>(Uri serviceName, ServicePartitionKey key) where TServiceInterface : IService
+        //public TServiceInterface Create<TServiceInterface>(Uri serviceName, ServicePartitionKey key) where TServiceInterface : IService
+        //{
+        //    return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceName);
+        //}
+
+        public TServiceInterface Create<TServiceInterface>(Uri serviceUri, ServicePartitionKey partitionKey = null, TargetReplicaSelector targetReplicaSelector = TargetReplicaSelector.Default, string listenerName = null) where TServiceInterface : IService
         {
-            return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceName);
+            return (TServiceInterface)this.createFunctions[typeof(TServiceInterface)](serviceUri);
         }
 
         public void Supports<TServiceInterface>(Func<Uri, object> Create)

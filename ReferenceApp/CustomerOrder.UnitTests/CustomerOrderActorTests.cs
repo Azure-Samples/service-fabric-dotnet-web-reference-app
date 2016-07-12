@@ -14,6 +14,7 @@ namespace CustomerOrder.UnitTests
     using Mocks;
     using System;
     using System.Collections.Generic;
+    using System.Fabric;
     using System.Reflection;
     using System.Threading.Tasks;
 
@@ -23,6 +24,20 @@ namespace CustomerOrder.UnitTests
         private const string OrderItemListPropertyName = "OrderList";
         private const string OrderStatusPropertyName = "CustomerOrderStatus";
         private const string RequestIdPropertyName = "RequestId";
+        private const string InventoryServiceName = "InventoryService";
+
+        private static ICodePackageActivationContext codePackageContext = new MockCodePackageActivationContext(
+            "fabric:/someapp",
+            "SomeAppType",
+            "Code",
+            "1.0.0.0",
+            Guid.NewGuid().ToString(),
+            @"C:\Log",
+            @"C:\Temp",
+            @"C:\Work",
+            "ServiceManifest",
+            "1.0.0.0"
+            );
 
         /// <summary>
         /// Tests FulfillOrder ships an order when all items are available from the InventoryService.
@@ -32,16 +47,14 @@ namespace CustomerOrder.UnitTests
         public async Task TestFulfillOrderSimple()
         {
             // The default mock inventory service behavior is to always complete an order.
+
             MockInventoryService inventoryService = new MockInventoryService();
 
-            MockServiceProxy serviceProxy = new MockServiceProxy();
-            serviceProxy.Supports<IInventoryService>(serviceUri => inventoryService);
+            MockServiceProxyFactory serviceProxyFactory = new MockServiceProxyFactory();
+            serviceProxyFactory.AssociateMockServiceAndName(new Uri("fabric:/someapp/" + InventoryServiceName), inventoryService);
 
-            CustomerOrderActor target = new CustomerOrderActor(serviceProxy, new MockActorStateManager());
+            CustomerOrderActor target = await CreateCustomerOrderActor(serviceProxyFactory);
 
-            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
-            idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
-            
             await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
             await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
             await target.StateManager.SetStateAsync<List<CustomerOrderItem>>(OrderItemListPropertyName, new List<CustomerOrderItem>()
@@ -72,10 +85,10 @@ namespace CustomerOrder.UnitTests
             MockServiceProxy serviceProxy = new MockServiceProxy();
             serviceProxy.Supports<IInventoryService>(serviceUri => inventoryService);
 
-            CustomerOrderActor target = new CustomerOrderActor(serviceProxy, new MockActorStateManager());
+            MockServiceProxyFactory serviceProxyFactory = new MockServiceProxyFactory();
+            serviceProxyFactory.AssociateMockServiceAndName(new Uri("fabric:/someapp/" + InventoryServiceName), inventoryService);
 
-            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
-            idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
+            CustomerOrderActor target = await CreateCustomerOrderActor(serviceProxyFactory);
 
             await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
             await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
@@ -108,10 +121,10 @@ namespace CustomerOrder.UnitTests
             MockServiceProxy serviceProxy = new MockServiceProxy();
             serviceProxy.Supports<IInventoryService>(serviceUri => inventoryService);
 
-            CustomerOrderActor target = new CustomerOrderActor(serviceProxy, new MockActorStateManager());
+            MockServiceProxyFactory serviceProxyFactory = new MockServiceProxyFactory();
+            serviceProxyFactory.AssociateMockServiceAndName(new Uri("fabric:/someapp/" + InventoryServiceName), inventoryService);
 
-            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
-            idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
+            CustomerOrderActor target = await CreateCustomerOrderActor(serviceProxyFactory);
 
             await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
             await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
@@ -145,10 +158,10 @@ namespace CustomerOrder.UnitTests
             MockServiceProxy serviceProxy = new MockServiceProxy();
             serviceProxy.Supports<IInventoryService>(serviceUri => inventoryService);
 
-            CustomerOrderActor target = new CustomerOrderActor(serviceProxy, new MockActorStateManager());
+            MockServiceProxyFactory serviceProxyFactory = new MockServiceProxyFactory();
+            serviceProxyFactory.AssociateMockServiceAndName(new Uri("fabric:/someapp/" + InventoryServiceName), inventoryService);
 
-            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
-            idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
+            CustomerOrderActor target = await CreateCustomerOrderActor(serviceProxyFactory);
 
             await target.StateManager.SetStateAsync<CustomerOrderStatus>(RequestIdPropertyName, CustomerOrderStatus.Submitted);
             await target.StateManager.SetStateAsync<long>(RequestIdPropertyName, 0);
@@ -162,6 +175,21 @@ namespace CustomerOrder.UnitTests
             CustomerOrderStatus status = await target.StateManager.GetStateAsync<CustomerOrderStatus>(OrderStatusPropertyName);
 
             Assert.AreEqual<CustomerOrderStatus>(CustomerOrderStatus.Canceled, status);
+        }
+
+        private static async Task<CustomerOrderActor> CreateCustomerOrderActor(MockServiceProxyFactory serviceProxyFactory)
+        {
+            CustomerOrderActor target = new CustomerOrderActor();
+
+            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
+            idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
+
+            PropertyInfo stateManagerProperty = typeof(MockableActor).GetProperty("StateManager");
+            stateManagerProperty.SetValue(target, new MockActorStateManager());
+
+            await target.InternalActivateAsync(codePackageContext, serviceProxyFactory);
+
+            return target;
         }
     }
 }
