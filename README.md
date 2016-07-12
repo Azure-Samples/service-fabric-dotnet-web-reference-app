@@ -1,7 +1,7 @@
 ---
 services: service-fabric
 platforms: dotnet
-author: vturecek
+author: masnider
 ---
 
 # Service Fabric Web Reference Application
