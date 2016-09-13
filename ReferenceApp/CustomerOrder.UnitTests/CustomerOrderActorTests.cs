@@ -194,7 +194,7 @@ namespace CustomerOrder.UnitTests
                 CustomerOrderActor target = new CustomerOrderActor(
                     new ActorService(
                         context: statefulServiceContext,
-                        actorTypeInfo: new ActorTypeInformation(),
+                        actorTypeInfo: ActorTypeInformation.Get(typeof(CustomerOrderActor)),
                         stateManagerFactory: (actorBase, stateProvider) => new MockActorStateManager()),
                     new ActorId(Guid.NewGuid()));
 
