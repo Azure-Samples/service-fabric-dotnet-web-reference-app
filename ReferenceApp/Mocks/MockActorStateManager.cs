@@ -84,5 +84,10 @@ namespace Mocks
         {
             throw new NotImplementedException();
         }
+
+        public Task SaveStateAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
     }
 }

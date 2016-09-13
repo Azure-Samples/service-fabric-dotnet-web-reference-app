@@ -15,6 +15,7 @@ namespace CustomerOrder.UnitTests
     using System;
     using System.Collections.Generic;
     using System.Fabric;
+    using System.Numerics;
     using System.Reflection;
     using System.Threading.Tasks;
 
@@ -38,6 +39,15 @@ namespace CustomerOrder.UnitTests
             "ServiceManifest",
             "1.0.0.0"
             );
+
+        private static StatefulServiceContext statefulServiceContext = new StatefulServiceContext(
+            new NodeContext("Test", new NodeId(new BigInteger(0), new BigInteger(0)), new BigInteger(0), "TestType", "localhost"),
+            codePackageContext,
+            "",
+            new Uri("fabric:/testapp/testservice"),
+            new byte[0],
+            Guid.NewGuid(),
+            0);
 
         /// <summary>
         /// Tests FulfillOrder ships an order when all items are available from the InventoryService.
@@ -179,17 +189,23 @@ namespace CustomerOrder.UnitTests
 
         private static async Task<CustomerOrderActor> CreateCustomerOrderActor(MockServiceProxyFactory serviceProxyFactory)
         {
-            CustomerOrderActor target = new CustomerOrderActor();
+            try
+            {
+                CustomerOrderActor target = new CustomerOrderActor(
+                    new ActorService(
+                        context: statefulServiceContext,
+                        actorTypeInfo: new ActorTypeInformation(),
+                        stateManagerFactory: (actorBase, stateProvider) => new MockActorStateManager()),
+                    new ActorId(Guid.NewGuid()));
 
-            PropertyInfo idProperty = typeof(ActorBase).GetProperty("Id");
-            idProperty.SetValue(target, new ActorId(Guid.NewGuid()));
+                await target.InternalActivateAsync(codePackageContext, serviceProxyFactory);
 
-            PropertyInfo stateManagerProperty = typeof(MockableActor).GetProperty("StateManager");
-            stateManagerProperty.SetValue(target, new MockActorStateManager());
-
-            await target.InternalActivateAsync(codePackageContext, serviceProxyFactory);
-
-            return target;
+                return target;
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
         }
     }
 }

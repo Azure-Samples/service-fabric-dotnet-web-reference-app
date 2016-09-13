@@ -19,7 +19,8 @@ namespace CustomerOrder.Actor
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    internal class CustomerOrderActor : MockableActor, ICustomerOrderActor, IRemindable
+
+    internal class CustomerOrderActor : Actor, ICustomerOrderActor, IRemindable
     {
         private const string InventoryServiceName = "InventoryService";
         private const string OrderItemListPropertyName = "OrderList";
@@ -29,6 +30,9 @@ namespace CustomerOrder.Actor
         private ServiceUriBuilder builder;
         private CancellationTokenSource tokenSource = null;
 
+        public CustomerOrderActor(ActorService actorService, ActorId actorId)
+            : base (actorService, actorId)
+        { }
 
         /// <summary>
         /// This method accepts a list of CustomerOrderItems, representing a customer order, and sets the actor's state

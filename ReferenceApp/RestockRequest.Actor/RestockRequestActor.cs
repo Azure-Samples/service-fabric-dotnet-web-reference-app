@@ -11,6 +11,7 @@ namespace RestockRequest.Actor
     using Microsoft.ServiceFabric.Actors.Runtime;
     using Microsoft.ServiceFabric.Data;
     using RestockRequest.Domain;
+    using Microsoft.ServiceFabric.Actors;
 
     //internal class RestockRequestActor : StatefulActor<RestockRequestActorState>, IRestockRequestActor, IRemindable
     internal class RestockRequestActor : Actor, IRestockRequestActor, IRemindable
@@ -21,6 +22,10 @@ namespace RestockRequest.Actor
         private static TimeSpan PipelineStageProcessingDuration = TimeSpan.FromSeconds(10);
 
         private static string ActorStatePropertyName = "RestockRequestActorStatePropertyName";
+
+        public RestockRequestActor(ActorService actorService, ActorId actorId)
+            : base (actorService, actorId)
+        { }
 
         public Task ReceiveReminderAsync(string reminderName, byte[] context, TimeSpan dueTime, TimeSpan period)
         {
