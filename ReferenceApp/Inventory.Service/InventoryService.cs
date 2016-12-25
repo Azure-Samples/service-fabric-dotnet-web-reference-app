@@ -242,7 +242,7 @@ namespace Inventory.Service
 
         /// <summary>
         /// Retrieves a customer-specific view (defined in the InventoryItemView class in the Fabrikam Common namespace)
-        /// af all items in the IReliableDictionary in InventoryService. Only items with a CustomerAvailableStock greater than
+        /// of all items in the IReliableDictionary in InventoryService. Only items with a CustomerAvailableStock greater than
         /// zero are returned as a business logic constraint to reduce overordering. 
         /// </summary>
         /// <returns>IEnumerable of InventoryItemView</returns>
