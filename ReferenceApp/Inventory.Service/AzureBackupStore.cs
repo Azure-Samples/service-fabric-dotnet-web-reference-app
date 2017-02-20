@@ -64,7 +64,7 @@ namespace Inventory.Service
             DirectoryInfo fullArchiveDirectoryInfo = new DirectoryInfo(fullArchiveDirectory);
             fullArchiveDirectoryInfo.Create();
 
-            string blobName = string.Format("{0}_{1}_{2}_{3}", Guid.NewGuid().ToString("N"), this.keyMin, this.keyMax, "Backup.zip");
+            string blobName = $"{Guid.NewGuid().ToString("N")}_{this.keyMin}_{this.keyMax}_Backup.zip";
             string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
 
             ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
@@ -73,7 +73,7 @@ namespace Inventory.Service
             backupDirectory.Delete(true);
 
             CloudBlockBlob blob = this.backupBlobContainer.GetBlockBlobReference(blobName);
-            await blob.UploadFromFileAsync(fullArchivePath, FileMode.Open, CancellationToken.None);
+            await blob.UploadFromFileAsync(fullArchivePath,  CancellationToken.None);
 
             DirectoryInfo tempDirectory = new DirectoryInfo(fullArchiveDirectory);
             tempDirectory.Delete(true);
@@ -91,7 +91,7 @@ namespace Inventory.Service
 
             string downloadId = Guid.NewGuid().ToString("N");
 
-            string zipPath = Path.Combine(this.PartitionTempDirectory, string.Format("{0}_Backup.zip", downloadId));
+            string zipPath = Path.Combine(this.PartitionTempDirectory, $"{downloadId}_Backup.zip");
 
             lastBackupBlob.DownloadToFile(zipPath, FileMode.CreateNew);
 
