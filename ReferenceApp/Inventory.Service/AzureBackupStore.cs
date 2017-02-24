@@ -64,7 +64,7 @@ namespace Inventory.Service
             DirectoryInfo fullArchiveDirectoryInfo = new DirectoryInfo(fullArchiveDirectory);
             fullArchiveDirectoryInfo.Create();
 
-            string blobName = $"{Guid.NewGuid().ToString("N")}_{this.keyMin}_{this.keyMax}_Backup.zip";
+            string blobName = string.Format("{0}_{1}_{2}_{3}", Guid.NewGuid().ToString("N"), this.keyMin, this.keyMax, "Backup.zip");
             string fullArchivePath = Path.Combine(fullArchiveDirectory, "Backup.zip");
 
             ZipFile.CreateFromDirectory(backupInfo.Directory, fullArchivePath, CompressionLevel.Fastest, false);
@@ -91,7 +91,7 @@ namespace Inventory.Service
 
             string downloadId = Guid.NewGuid().ToString("N");
 
-            string zipPath = Path.Combine(this.PartitionTempDirectory, $"{downloadId}_Backup.zip");
+            string zipPath = Path.Combine(this.PartitionTempDirectory, string.Format("{0}_Backup.zip", downloadId));
 
             lastBackupBlob.DownloadToFile(zipPath, FileMode.CreateNew);
 
