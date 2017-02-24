@@ -73,7 +73,7 @@ namespace Inventory.Service
             backupDirectory.Delete(true);
 
             CloudBlockBlob blob = this.backupBlobContainer.GetBlockBlobReference(blobName);
-            await blob.UploadFromFileAsync(fullArchivePath, FileMode.Open, CancellationToken.None);
+            await blob.UploadFromFileAsync(fullArchivePath,  CancellationToken.None);
 
             DirectoryInfo tempDirectory = new DirectoryInfo(fullArchiveDirectory);
             tempDirectory.Delete(true);
