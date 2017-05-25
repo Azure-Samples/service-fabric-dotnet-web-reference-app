@@ -8,13 +8,13 @@ namespace Web.Service.Controllers
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using System.Web.Http;
     using Common;
     using CustomerOrder.Domain;
     using Microsoft.ServiceFabric.Actors;
     using Microsoft.ServiceFabric.Actors.Client;
+    using Microsoft.AspNetCore.Mvc;
 
-    public class OrdersController : ApiController
+    public class OrdersController : Controller
     {
         private const string CustomerOrderServiceName = "CustomerOrderActorService";
 

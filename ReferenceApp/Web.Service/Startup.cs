@@ -1,38 +1,60 @@
-﻿// ------------------------------------------------------------
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
-// ------------------------------------------------------------
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Web.Service
 {
-    using System.Web.Http;
-    using Microsoft.Owin;
-    using Microsoft.Owin.FileSystems;
-    using Microsoft.Owin.StaticFiles;
-    using Owin;
-
-    internal class Startup : IOwinAppBuilder
+    public class Startup
     {
-        public void Configuration(IAppBuilder appBuilder)
+        public Startup(IHostingEnvironment env)
         {
-            HttpConfiguration config = new HttpConfiguration();
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .AddEnvironmentVariables();
+            Configuration = builder.Build();
+        }
 
-            PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
-            FileServerOptions fileOptions = new FileServerOptions();
+        public IConfigurationRoot Configuration { get; }
 
-            fileOptions.EnableDefaultFiles = true;
-            fileOptions.RequestPath = PathString.Empty;
-            fileOptions.FileSystem = physicalFileSystem;
-            fileOptions.DefaultFilesOptions.DefaultFileNames = new[] {"index.html"};
-            fileOptions.StaticFileOptions.FileSystem = fileOptions.FileSystem = physicalFileSystem;
-            fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
-            fileOptions.EnableDirectoryBrowsing = true;
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            // Add framework services.
+            services.AddMvc();
+        }
 
-            FormatterConfig.ConfigureFormatters(config.Formatters);
-            config.MapHttpAttributeRoutes();
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        {
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
 
-            appBuilder.UseWebApi(config);
-            appBuilder.UseFileServer(fileOptions);
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                app.UseBrowserLink();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+            }
+
+            app.UseStaticFiles();
+
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=Home}/{action=Index}/{id?}");
+            });
         }
     }
 }

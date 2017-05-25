@@ -11,13 +11,13 @@ namespace Web.Service.Controllers
     using System.Fabric.Query;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web.Http;
     using Common;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using Microsoft.AspNetCore.Mvc;
 
-    public class StoreController : ApiController
+    public class StoreController : Controller
     {
         public const string InventoryServiceName = "InventoryService";
         private static FabricClient fc = new FabricClient();

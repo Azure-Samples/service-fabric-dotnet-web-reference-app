@@ -15,6 +15,7 @@
     <EntryPoint>
       <ExeHost>
         <Program>Web.Service.exe</Program>
+        <WorkingFolder>CodePackage</WorkingFolder>
       </ExeHost>
     </EntryPoint>
   </CodePackage>
@@ -25,9 +26,10 @@
 
   <Resources>
     <Endpoints>
-      <!-- This endpoint is used by the OWIN communication listener to obtain the port on which to listen. -->
-      <Endpoint Name="ServiceEndpoint" Type="Input" Protocol="http" Port="8505" />
-
+      <!-- This endpoint is used by the communication listener to obtain the port on which to 
+           listen. Please note that if your service is partitioned, this port is shared with 
+           replicas of different partitions that are placed in your code. -->
+      <Endpoint Protocol="http" Name="ServiceEndpoint" Type="Input" Port="8081" />
     </Endpoints>
   </Resources>
 </ServiceManifest>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "WebReferenceApplication", "WebReferenceApplication\WebReferenceApplication.sfproj", "{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -9,8 +9,6 @@ Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "WebReferenceApplication", "
 		{1E7E813F-43D3-4D0B-8546-5E1023873F28} = {1E7E813F-43D3-4D0B-8546-5E1023873F28}
 		{A44FC2C5-6781-447E-80F5-7265B960B36A} = {A44FC2C5-6781-447E-80F5-7265B960B36A}
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.Service", "Web.Service\Web.Service.csproj", "{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.Actor", "CustomerOrder.Actor\CustomerOrder.Actor.csproj", "{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}"
 EndProject
@@ -42,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mocks", "Mocks\Mocks.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrder.UnitTests", "CustomerOrder.UnitTests\CustomerOrder.UnitTests.csproj", "{226B8D34-99CF-4172-87DC-E20B39030CC0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.Service", "Web.Service\Web.Service.csproj", "{EB1D3837-C58C-4F47-8B64-938E6013E8EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -54,10 +54,6 @@ Global
 		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Release|x64.ActiveCfg = Release|x64
 		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Release|x64.Build.0 = Release|x64
 		{0EE37B65-FCCB-44AE-B4F7-AED85FDEB072}.Release|x64.Deploy.0 = Release|x64
-		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Debug|x64.ActiveCfg = Debug|x64
-		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Debug|x64.Build.0 = Debug|x64
-		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Release|x64.ActiveCfg = Release|x64
-		{E3C4937F-5A5F-4F96-8291-C02CE0C62D7E}.Release|x64.Build.0 = Release|x64
 		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Debug|x64.ActiveCfg = Debug|x64
 		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Debug|x64.Build.0 = Debug|x64
 		{5F0C7805-C91D-47E9-AEDE-946CADEA1C8F}.Release|x64.ActiveCfg = Release|x64
@@ -106,6 +102,10 @@ Global
 		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Debug|x64.Build.0 = Debug|x64
 		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Release|x64.ActiveCfg = Release|x64
 		{226B8D34-99CF-4172-87DC-E20B39030CC0}.Release|x64.Build.0 = Release|x64
+		{EB1D3837-C58C-4F47-8B64-938E6013E8EB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EB1D3837-C58C-4F47-8B64-938E6013E8EB}.Debug|x64.Build.0 = Debug|Any CPU
+		{EB1D3837-C58C-4F47-8B64-938E6013E8EB}.Release|x64.ActiveCfg = Release|Any CPU
+		{EB1D3837-C58C-4F47-8B64-938E6013E8EB}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

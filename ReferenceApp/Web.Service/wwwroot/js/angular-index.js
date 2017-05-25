@@ -85,7 +85,7 @@
                           //$cookies.put('orderId', response.data);
                           var orderId = response.data;
 
-                          var path = '/fabrikam/orderconfirmation.html?orderId=';
+                          var path = '/fabrikam/OrderConfirmation?orderId=';
 
                           var address = path.concat(orderId);
 

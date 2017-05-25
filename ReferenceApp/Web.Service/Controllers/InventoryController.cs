@@ -7,12 +7,12 @@ namespace Web.Service.Controllers
 {
     using System;
     using System.Threading.Tasks;
-    using System.Web.Http;
     using Common;
     using Inventory.Domain;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using Microsoft.AspNetCore.Mvc;
 
-    public class InventoryController : ApiController
+    public class InventoryController : Controller
     {
         private const string InventoryServiceName = "InventoryService";
 
