@@ -5,7 +5,7 @@
 
             /*--------------------VARIABLES------------------------*/
 
-            // Shopping cart for UI display only. Description, Price, Quantity.
+            // Shopping cart for UI display only. description, price, quantity.
             $scope.cart = [];
             // ItemId, Quanity. Used in HttpPost to fulfill order.
             $scope.order = [];
@@ -37,36 +37,36 @@
             $scope.submit = function (row) {
 
                 // Ensure user enters valid non-negative integer.
-                while (row.Quantity != parseInt(row.Quantity, 10) || row.Quantity <= 0) {
-                    row.Quantity = "";
-                    row.Quantity = prompt("Please enter a non-negative quantity: ");
-                    if (row.Quantity === null) {
+                while (row.quantity != parseInt(row.quantity, 10) || row.quantity <= 0) {
+                    row.quantity = "";
+                    row.quantity = prompt("Please enter a non-negative quantity: ");
+                    if (row.quantity === null) {
                         $window.alert("Order canceled.");
                         return;
                     }
                 }
                 // Check to see if there are enough items in inventory to order quantity specified.
-                if (row.Quantity > row.CustomerAvailableStock) {
+                if (row.quantity > row.customerAvailableStock) {
                     $window.alert("Order exceeded available stock.");
                     return;
                 }
 
                 // Add to shopping cart and calculate total cost. 
-                local_cart.push({ 'Description': row.Description, 'Price': row.Price, 'Quantity': row.Quantity });
-                cart_total_unformatted += row.Price * row.Quantity;
+                local_cart.push({ 'description': row.description, 'price': row.price, 'quantity': row.quantity });
+                cart_total_unformatted += row.price * row.quantity;
 
                 // Update number of available items in inventory. Only updating local copy of inventory, not actual backend data.
-                row.CustomerAvailableStock -= row.Quantity;
+                row.customerAvailableStock -= row.quantity;
 
                 // Copy data to scope variables to show on webpage.
                 $scope.cart_total = Number(cart_total_unformatted).toFixed(2);
                 $scope.cart = local_cart;
 
-                // Keep track of Id and Quantity to send back to order service.
-                $scope.order.push({ 'ItemId': row.Id, 'Quantity': row.Quantity });
+                // Keep track of id and quantity to send back to order service.
+                $scope.order.push({ 'ItemId': row.id, 'quantity': row.quantity });
 
-                // Set UI Quantity back to empty.
-                row.Quantity = "";
+                // Set UI quantity back to empty.
+                row.quantity = "";
 
             }
 
@@ -119,8 +119,8 @@
             }
 
             $scope.createInventory = function () {
-                //Description
-                //Price
+                //description
+                //price
                 //Number
                 //Reorder Threshold
                 //Max

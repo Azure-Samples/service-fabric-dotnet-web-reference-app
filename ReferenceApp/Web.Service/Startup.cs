@@ -53,7 +53,18 @@ namespace Web.Service
             {
                 routes.MapRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    template: "{controller=Home}/{action=Index}");
+
+                routes.MapRoute(
+                    name: "admin",
+                    template: "Admin",
+                    defaults: new { controller = "Home", action = "Admin" });
+
+                routes.MapRoute(
+                    name: "orders",
+                    template: "OrderConfirmation",
+                    defaults: new { controller = "Home", action = "OrderConfirmation" });
+
             });
         }
     }

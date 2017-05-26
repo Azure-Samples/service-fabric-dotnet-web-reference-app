@@ -17,11 +17,11 @@
             </thead>
             <tbody>
                 <tr ng-repeat="row in inventory">
-                    <td>{{row.Description}}</td>
-                    <td>${{row.Price}}</td>
-                    <td>{{row.CustomerAvailableStock}}</td>
+                    <td>{{row.description}}</td>
+                    <td>${{row.price}}</td>
+                    <td>{{row.customerAvailableStock}}</td>
                     <td>
-                        <input type="number" class="textbox" ng-model="row.Quantity" />
+                        <input type="number" class="textbox" ng-model="row.quantity" />
                         <input type="submit" value="Add" ng-click="submit(row)">
                     </td>
                 </tr>
@@ -34,15 +34,15 @@
             <thead>
                 <tr>
                     <th colspan="2">Item</th>
-                    <th colspan="2">Price</th>
+                    <th colspan="2">price</th>
                     <th colspan="2">Quantity</th>
                 </tr>
             </thead>
             <tbody>
                 <tr ng-repeat="item in cart">
-                    <td colspan="2"> {{item.Description}}</td>
-                    <td colspan="2"> ${{item.Price}}</td>
-                    <td colspan="2"> {{item.Quantity}}</td>
+                    <td colspan="2"> {{item.description}}</td>
+                    <td colspan="2"> ${{item.price}}</td>
+                    <td colspan="2"> {{item.quantity}}</td>
                 </tr>
                 <tr class="success">
                     <td colspan="3"><b>Total</b></td>
