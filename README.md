@@ -31,8 +31,8 @@ This deploys the entire web store application on your local machine.
 
 There are two web endpoints to begin interacting with the application:
 
-1. **http://localhost:8505/fabrikam/admin.html** - a very basic admin portal where you can add items into the inventory. When you first launch the application, the inventory is empty.
-2. **http://localhost:8505/fabrikam/** - a basic store front-end. This shows the current inventory and your shopping cart where you can add and purchase items to see the flow of data through the system.
+1. **http://localhost:8081/fabrikam/admin** - a very basic admin portal where you can add items into the inventory. When you first launch the application, the inventory is empty. **At the very first start, you should create a few items. The store front-end is not working with an empty inventory.**
+2. **http://localhost:8081/fabrikam/** - a basic store front-end. This shows the current inventory and your shopping cart where you can add and purchase items to see the flow of data through the system.
 
 ## Deploy this sample to Azure
 The application can be deployed to Azure by right-clicking the application project in Visual Studio and selecting "Publish".
