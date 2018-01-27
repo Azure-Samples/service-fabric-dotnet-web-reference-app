@@ -15,7 +15,7 @@ namespace Mocks
     using System.Threading;
     using System.Threading.Tasks;
 
-    public class MockReliableStateManager : IReliableStateManagerReplica
+    public class MockReliableStateManager : IReliableStateManagerReplica2
     {
         private ConcurrentDictionary<Uri, IReliableState> store = new ConcurrentDictionary<Uri, IReliableState>();
         private Func<CancellationToken, Task<bool>> datalossFunction;
@@ -38,6 +38,8 @@ namespace Mocks
                 return this.datalossFunction;
             }
         }
+
+        public Func<CancellationToken, Task> OnRestoreCompletedAsync { set => throw new NotImplementedException(); }
 
         public event EventHandler<NotifyTransactionChangedEventArgs> TransactionChanged;
         public event EventHandler<NotifyStateManagerChangedEventArgs> StateManagerChanged;

@@ -172,6 +172,21 @@
             // TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
+
+        public void ReportApplicationHealth(HealthInformation healthInfo, HealthReportSendOptions sendOptions)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportDeployedApplicationHealth(HealthInformation healthInfo, HealthReportSendOptions sendOptions)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportDeployedServicePackageHealth(HealthInformation healthInfo, HealthReportSendOptions sendOptions)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }
