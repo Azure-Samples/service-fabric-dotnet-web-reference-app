@@ -6,11 +6,11 @@
         <Extension Name="__GeneratedServiceType__" GeneratedId="cd8c75cc-03eb-4aec-ab00-dd3cc5048d9d|None">
           <GeneratedNames xmlns="http://schemas.microsoft.com/2015/03/fabact-no-schema">
             <DefaultService Name="RestockRequestActorService" />
-            <ServiceEndpoint Name="RestockRequestActorServiceEndpoint" />
             <ReplicatorEndpoint Name="RestockRequestActorServiceReplicatorEndpoint" />
             <ReplicatorConfigSection Name="RestockRequestActorServiceReplicatorConfig" />
             <ReplicatorSecurityConfigSection Name="RestockRequestActorServiceReplicatorSecurityConfig" />
             <StoreConfigSection Name="RestockRequestActorServiceLocalStoreConfig" />
+            <ServiceEndpoint Name="RestockRequestActorServiceEndpoint" />
           </GeneratedNames>
         </Extension>
       </Extensions>

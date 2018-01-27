@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Application xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Name="fabric:/WebReferenceApplication" xmlns="http://schemas.microsoft.com/2011/01/fabric">
+  <Parameters>
+    <Parameter Name="WebService_InstanceCount" Value="1" />
+    <Parameter Name="RestockRequestActorService_PartitionCount" Value="1" />
+    <Parameter Name="RestockRequestActorService_MinReplicaSetSize" Value="1" />
+    <Parameter Name="RestockRequestActorService_TargetReplicaSetSize" Value="1" />
+    <Parameter Name="CustomerOrderActorService_PartitionCount" Value="1" />
+    <Parameter Name="CustomerOrderActorService_MinReplicaSetSize" Value="1" />
+    <Parameter Name="CustomerOrderActorService_TargetReplicaSetSize" Value="1" />
+    <Parameter Name="RestockRequestManagerService_MinReplicaSetSize" Value="1" />
+    <Parameter Name="RestockRequestManagerService_TargetReplicaSetSize" Value="1" />
+    <Parameter Name="InventoryService_PartitionCount" Value="1" />
+    <Parameter Name="InventoryService_MinReplicaSetSize" Value="1" />
+    <Parameter Name="InventoryService_TargetReplicaSetSize" Value="1" />
+  </Parameters>
+</Application>
