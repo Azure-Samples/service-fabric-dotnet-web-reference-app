@@ -15,12 +15,6 @@
                                     StoreLocation="CurrentUser"
                                     StoreName="My" />
   -->
-  <ClusterConnectionParameters ConnectionEndpoint="coreclrappval2.southcentralus.cloudapp.azure.com:19000"
-                                    X509Credential="true"
-                                    ServerCertThumbprint="0BBA5C2B668F542A43AC0F7F3474931471003EBA"
-                                    FindType="FindByThumbprint"
-                                    FindValue="0BBA5C2B668F542A43AC0F7F3474931471003EBA"
-                                    StoreLocation="CurrentUser"
-                                    StoreName="My" />
+  <ClusterConnectionParameters ConnectionEndpoint="party17982.westus.cloudapp.azure.com:19000" />
   <ApplicationParameterFile Path="..\ApplicationParameters\Cloud.xml" />
 </PublishProfile>

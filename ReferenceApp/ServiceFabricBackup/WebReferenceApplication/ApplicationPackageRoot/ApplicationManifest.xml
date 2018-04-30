@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="WebReferenceApplicationType" ApplicationTypeVersion="1.0.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
+  <Parameters>
+    <Parameter Name="WebService_InstanceCount" DefaultValue="-1" />
+    <Parameter Name="RestockRequestActorService_PartitionCount" DefaultValue="9" />
+    <Parameter Name="RestockRequestActorService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="RestockRequestActorService_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="CustomerOrderActorService_PartitionCount" DefaultValue="9" />
+    <Parameter Name="CustomerOrderActorService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="CustomerOrderActorService_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="RestockRequestManagerService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="RestockRequestManagerService_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="InventoryService_PartitionCount" DefaultValue="9" />
+    <Parameter Name="InventoryService_MinReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="InventoryService_TargetReplicaSetSize" DefaultValue="3" />
+  </Parameters>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="Web.ServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides />
+  </ServiceManifestImport>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="RestockRequest.ActorPkg" ServiceManifestVersion="1.0.0" />
+  </ServiceManifestImport>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="CustomerOrder.ActorPkg" ServiceManifestVersion="1.0.0" />
+  </ServiceManifestImport>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="RestockRequestManager.ServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides />
+  </ServiceManifestImport>
+  <ServiceManifestImport>
+    <ServiceManifestRef ServiceManifestName="Inventory.ServicePkg" ServiceManifestVersion="1.0.0" />
+    <ConfigOverrides />
+  </ServiceManifestImport>
+  <DefaultServices>
+    <Service Name="WebService">
+      <StatelessService ServiceTypeName="WebServiceType" InstanceCount="[WebService_InstanceCount]">
+        <SingletonPartition />
+      </StatelessService>
+    </Service>
+    <Service Name="RestockRequestActorService" GeneratedIdRef="cd8c75cc-03eb-4aec-ab00-dd3cc5048d9d|None">
+      <StatefulService ServiceTypeName="RestockRequestActorServiceType" TargetReplicaSetSize="[RestockRequestActorService_TargetReplicaSetSize]" MinReplicaSetSize="[RestockRequestActorService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[RestockRequestActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>
+    <Service Name="CustomerOrderActorService" GeneratedIdRef="36545b1e-9aa7-417b-a8aa-b7e28fd47353|None">
+      <StatefulService ServiceTypeName="CustomerOrderActorServiceType" TargetReplicaSetSize="[CustomerOrderActorService_TargetReplicaSetSize]" MinReplicaSetSize="[CustomerOrderActorService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[CustomerOrderActorService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>
+    <Service Name="RestockRequestManager">
+      <StatefulService ServiceTypeName="RestockRequestManagerServiceType" TargetReplicaSetSize="[RestockRequestManagerService_TargetReplicaSetSize]" MinReplicaSetSize="[RestockRequestManagerService_MinReplicaSetSize]">
+        <SingletonPartition />
+      </StatefulService>
+    </Service>
+    <Service Name="InventoryService">
+      <StatefulService ServiceTypeName="InventoryServiceType" TargetReplicaSetSize="[InventoryService_TargetReplicaSetSize]" MinReplicaSetSize="[InventoryService_MinReplicaSetSize]">
+        <UniformInt64Partition PartitionCount="[InventoryService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+      </StatefulService>
+    </Service>
+  </DefaultServices>
+</ApplicationManifest>
