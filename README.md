@@ -4,12 +4,15 @@ languages:
 products:
 - azure
 topic: sample
+description: "The web reference application shows how to build an end-to-end Service Fabric application with multiple types of services."
 ---
 
 # Service Fabric Web Reference Application
+
 The web reference application shows how to build an end-to-end Service Fabric application with multiple types of services, combining Reliable Services and Reliable Actors to construct a complete solution.
 
-##Scenario
+## Scenario
+
 The context of this sample is a web-based store with a customer order and inventory management back-end. Logical parts of the management back-end are represented by individual services, allowing loose coupling of functionality and independently-upgradeable components:
 
 - Customer Order Service
