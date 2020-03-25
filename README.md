@@ -3,6 +3,7 @@ languages:
 - csharp
 products:
 - azure
+- azure-service-fabric
 page_type: sample
 description: "The web reference application shows how to build an end-to-end Service Fabric application with multiple types of services."
 ---
