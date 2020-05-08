@@ -45,15 +45,16 @@ namespace Inventory.Domain
             return new ServicePartitionKey(HashUtil.getLongHashCode(this.id.ToString()));
         }
 
-        public static bool operator ==(InventoryItemId item1, InventoryItemId item2)
-        {
-            return item1.Equals(item2);
-        }
+        // comment operator to fix null compare bug
+        //public static bool operator ==(InventoryItemId item1, InventoryItemId item2)
+        //{
+        //    return item1.Equals(item2);
+        //}
 
-        public static bool operator !=(InventoryItemId item1, InventoryItemId item2)
-        {
-            return !item1.Equals(item2);
-        }
+        //public static bool operator !=(InventoryItemId item1, InventoryItemId item2)
+        //{
+        //    return !item1.Equals(item2);
+        //}
 
         public override bool Equals(object obj)
         {

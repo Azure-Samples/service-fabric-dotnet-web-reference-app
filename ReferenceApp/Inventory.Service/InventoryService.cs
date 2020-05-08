@@ -48,7 +48,7 @@ namespace Inventory.Service
         {
         }
 
-        public InventoryService(StatefulServiceContext context, IReliableStateManagerReplica stateManagerReplica) : base(context, stateManagerReplica)
+        public InventoryService(StatefulServiceContext context, IReliableStateManagerReplica2 stateManagerReplica) : base(context, stateManagerReplica)
         {
         }
 

@@ -9,6 +9,8 @@ namespace Mocks
     using Microsoft.ServiceFabric.Services.Communication.Client;
     using Microsoft.ServiceFabric.Services.Remoting;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using Microsoft.ServiceFabric.Services.Remoting.V1.Client;
+    using Microsoft.ServiceFabric.Services.Remoting.V2.Client;
     using System;
     using System.Collections.Generic;
 
@@ -18,7 +20,9 @@ namespace Mocks
 
         public Type ServiceInterfaceType { get; private set; }
 
-        public IServiceRemotingPartitionClient ServicePartitionClient { get; private set; }
+        public Microsoft.ServiceFabric.Services.Remoting.V2.Client.IServiceRemotingPartitionClient ServicePartitionClient2 { get; private set; }
+
+        Microsoft.ServiceFabric.Services.Remoting.V1.Client.IServiceRemotingPartitionClient IServiceProxy.ServicePartitionClient { get; }
 
         public TServiceInterface Create<TServiceInterface>(Uri serviceName) where TServiceInterface : IService
         {

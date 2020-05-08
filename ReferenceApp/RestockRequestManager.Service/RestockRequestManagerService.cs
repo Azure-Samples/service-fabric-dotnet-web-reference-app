@@ -36,7 +36,7 @@ namespace RestockRequestManager.Service
         {
         }
 
-        public RestockRequestManagerService(StatefulServiceContext serviceContext, IReliableStateManagerReplica reliableStateManagerReplica)
+        public RestockRequestManagerService(StatefulServiceContext serviceContext, IReliableStateManagerReplica2 reliableStateManagerReplica)
             : base(serviceContext, reliableStateManagerReplica)
         {
         }
